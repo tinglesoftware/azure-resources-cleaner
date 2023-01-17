@@ -1,0 +1,208 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    },
+    "name": {
+      "type": "string",
+      "defaultValue": "azdo-cleaner",
+      "metadata": {
+        "description": "Name of all resources."
+      }
+    },
+    "dockerImageRegistry": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Registry of the docker image. E.g. \"contoso.azurecr.io\". Leave empty unless you have a private registry mirroring the image from docker hub"
+      }
+    },
+    "dockerImageRepository": {
+      "type": "string",
+      "defaultValue": "tingle/azure-devops-cleaner",
+      "metadata": {
+        "description": "Registry and repository of the docker image. Ideally, you do not need to edit this value."
+      }
+    },
+    "dockerImageTag": {
+      "type": "string",
+      "defaultValue": "0.1.0",
+      "metadata": {
+        "description": "Tag of the docker image."
+      }
+    },
+    "notificationsPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "Notifications password."
+      }
+    },
+    "azureDevOpsProjectUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "URL of the project. For example \"https://dev.azure.com/fabrikam/DefaultCollection\""
+      }
+    },
+    "azureDevOpsProjectToken": {
+      "type": "secureString",
+      "metadata": {
+        "description": "Token for accessing the project."
+      }
+    },
+    "minReplicas": {
+      "type": "int",
+      "defaultValue": 0,
+      "metadata": {
+        "description": "The minimum number of replicas"
+      },
+      "maxValue": 2,
+      "minValue": 0
+    },
+    "maxReplicas": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "The maximum number of replicas"
+      },
+      "maxValue": 5,
+      "minValue": 1
+    }
+  },
+  "variables": {
+    "hasDockerImageRegistry": "[and(not(equals(parameters('dockerImageRegistry'), null())), not(empty(parameters('dockerImageRegistry'))))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2018-11-30",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2022-03-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 80,
+            "traffic": [
+              {
+                "latestRevision": true,
+                "weight": 100
+              }
+            ]
+          },
+          "registries": "[if(variables('hasDockerImageRegistry'), createArray(createObject('identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'server', parameters('dockerImageRegistry'))), createArray())]",
+          "secrets": [
+            {
+              "name": "connection-strings-application-insights",
+              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString]"
+            },
+            {
+              "name": "notifications-password",
+              "value": "[parameters('notificationsPassword')]"
+            },
+            {
+              "name": "project-and-token-0",
+              "value": "[format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken'))]"
+            }
+          ]
+        },
+        "template": {
+          "containers": [
+            {
+              "image": "[format('{0}{1}:{2}', format('{0}', if(variables('hasDockerImageRegistry'), format('{0}/', parameters('dockerImageRegistry')), '')), parameters('dockerImageRepository'), parameters('dockerImageTag'))]",
+              "name": "azdo-cleaner",
+              "env": [
+                {
+                  "name": "AZURE_CLIENT_ID",
+                  "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2018-11-30').clientId]"
+                },
+                {
+                  "name": "ASPNETCORE_FORWARDEDHEADERS_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "ApplicationInsights__ConnectionString",
+                  "secretRef": "connection-strings-application-insights"
+                },
+                {
+                  "name": "Authentication__ServiceHooks__Credentials__vsts",
+                  "secretRef": "notifications-password"
+                },
+                {
+                  "name": "Handler__Projects__0",
+                  "secretRef": "project-and-token-0"
+                },
+                {
+                  "name": "Handler__AzureWebsites",
+                  "value": "false"
+                }
+              ],
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              }
+            }
+          ],
+          "scale": {
+            "minReplicas": "[parameters('minReplicas')]",
+            "maxReplicas": "[parameters('maxReplicas')]"
+          }
+        }
+      },
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')))]": {}
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]",
+        "[resourceId('Microsoft.Insights/components', parameters('name'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "id": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.App/containerApps', parameters('name'))]"
+    },
+    "fqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn]"
+    },
+    "notificationUrl": {
+      "type": "string",
+      "value": "[format('https://{0}/service-hooks/pull-request-updated', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn)]"
+    }
+  }
+}

@@ -93,12 +93,12 @@ internal class PullRequestUpdatedHandler
 
             if (options.AzureWebsites)
             {
-                await DeleteAzureWebsitesSlotsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureWebsitesAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzureStaticWebApps)
             {
-                await DeleteAzureStaticWebAppEnvironmentsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureStaticWebAppsAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzureContainerApps)
@@ -147,7 +147,7 @@ internal class PullRequestUpdatedHandler
         }
     }
 
-    protected virtual async Task DeleteAzureWebsitesSlotsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetWebSitesAsync(cancellationToken);
         await foreach (var site in sites)
@@ -181,7 +181,7 @@ internal class PullRequestUpdatedHandler
         }
     }
 
-    protected virtual async Task DeleteAzureStaticWebAppEnvironmentsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetStaticSitesAsync(cancellationToken);
         await foreach (var site in sites)
@@ -254,8 +254,8 @@ internal class PullRequestUpdatedHandler
         foreach (var env in environments)
         {
             var environment = await client.GetEnvironmentByIdAsync(project: url.ProjectIdOrName,
-            environmentId: env.Id,
-            expands: EnvironmentExpands.ResourceReferences,
+                                                                   environmentId: env.Id,
+                                                                   expands: EnvironmentExpands.ResourceReferences,
                                                                    cancellationToken: cancellationToken);
             logger.LogTrace("Found {ResourcesCount} resources in '{ProjectIdOrName}' and Environment '{EnvironmentName}'.\r\nResources:{ResourceNames}",
                             environment.Resources.Count,

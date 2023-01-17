@@ -97,5 +97,3 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         draft: true
         allowUpdates: true
-
-    # TODO: should we publish on Azure marketplace?

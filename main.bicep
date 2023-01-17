@@ -10,14 +10,14 @@ param dockerImageRegistry string = ''
 @description('Registry and repository of the docker image. Ideally, you do not need to edit this value.')
 param dockerImageRepository string = 'tingle/azure-devops-cleaner'
 
-@description('Tag of the docker image tag.')
+@description('Tag of the docker image.')
 param dockerImageTag string = '#{GITVERSION_NUGETVERSIONV2}#'
 
 @secure()
 @description('Notifications password.')
 param notificationsPassword string
 
-@description('Token for accessing the project. For example "https://dev.azure.com/fabrikam/DefaultCollection"')
+@description('URL of the project. For example "https://dev.azure.com/fabrikam/DefaultCollection"')
 param azureDevOpsProjectUrl string
 
 @secure()
