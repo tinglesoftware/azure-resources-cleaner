@@ -46,7 +46,7 @@ public class EndpointTests
     }
 
     [Fact]
-    public async Task EndpointReturns_BadRequest()
+    public async Task EndpointReturns_BadRequest_NoBody()
     {
         await TestAsync(async (client, handler) =>
         {
@@ -55,6 +55,22 @@ public class EndpointTests
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Empty(await response.Content.ReadAsStringAsync());
+            Assert.Empty(handler.Calls);
+        });
+    }
+
+    [Fact]
+    public async Task EndpointReturns_BadRequest_MissingValues()
+    {
+        await TestAsync(async (client, handler) =>
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
+            request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            var response = await client.SendAsync(request);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Equal(
+                "{\"type\":\"https://tools.ietf.org/html/rfc7231#section-6.5.1\",\"title\":\"One or more validation errors occurred.\",\"status\":400,\"errors\":{\"Resource\":[\"The Resource field is required.\"]}}", await response.Content.ReadAsStringAsync());
             Assert.Empty(handler.Calls);
         });
     }

@@ -1,6 +1,7 @@
 using AspNetCore.Authentication.Basic;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
+using MiniValidation;
 using Tingle.AzdoCleaner;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,10 +52,26 @@ internal static class ApplicationExtensions
         return services;
     }
 
-    public static RouteHandlerBuilder MapAzdoNotifications(this IEndpointRouteBuilder builder)
+    public static IEndpointConventionBuilder MapAzdoNotifications(this IEndpointRouteBuilder builder)
     {
-        return builder.MapPost(
-            pattern: "/service-hooks/pull-request-updated",
-            handler: (PullRequestUpdatedHandler handler, [FromBody] PullRequestUpdatedEvent @event) => handler.HandleAsync(@event));
+        var group = builder.MapGroup("/service-hooks");
+
+        //group.MapPost("/pull-request-created", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestCreatedEvent @event) =>
+        //{
+        //    if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
+
+        //    await handler.HandleAsync(@event);
+        //    return Results.Ok();
+        //});
+
+        group.MapPost("/pull-request-updated", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestUpdatedEvent @event) =>
+        {
+            if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
+
+            await handler.HandleAsync(@event);
+            return Results.Ok();
+        });
+
+        return group;
     }
 }
