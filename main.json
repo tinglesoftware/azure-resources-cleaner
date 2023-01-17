@@ -32,7 +32,7 @@
     },
     "dockerImageTag": {
       "type": "string",
-      "defaultValue": "0.1.0",
+      "defaultValue": "latest",
       "metadata": {
         "description": "Tag of the docker image."
       }
