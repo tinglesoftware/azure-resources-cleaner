@@ -86,6 +86,13 @@ internal class PullRequestUpdatedHandler
         var subscriptions = client.GetSubscriptions().GetAllAsync(cancellationToken);
         await foreach (var sub in subscriptions)
         {
+            logger.LogDebug("Searching in subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
+
+            if (options.AzureResourceGroups)
+            {
+                await DeleteAzureResourceGroupsAsync(sub, possibleNames, cancellationToken);
+            }
+
             if (options.AzureKubernetes)
             {
                 await DeleteAzureKubernetesNamespacesAsync(sub, possibleNames, cancellationToken);
@@ -112,7 +119,19 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
-
+    protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var groups = sub.GetResourceGroups();
+        await foreach (var group in groups)
+        {
+            var name = group.Data.Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            {
+                logger.LogInformation("Deleting resource group '{ResourceGroupName}' at '{ResourceId}'", name, group.Data.Id);
+                await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+            }
+        }
+    }
     protected virtual async Task DeleteAzureKubernetesNamespacesAsync(SubscriptionResource sub, IReadOnlyList<string> possibleNames, CancellationToken cancellationToken)
     {
         var clusters = sub.GetContainerServiceManagedClustersAsync(cancellationToken);
@@ -146,7 +165,6 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
-
     protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetWebSitesAsync(cancellationToken);
@@ -180,7 +198,6 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
-
     protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetStaticSitesAsync(cancellationToken);
@@ -214,7 +231,6 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
-
     protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var apps = sub.GetContainerAppsAsync(cancellationToken);
@@ -228,7 +244,6 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
-
     protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
         var groups = sub.GetContainerGroupsAsync(cancellationToken);
@@ -315,6 +330,7 @@ public class PullRequestUpdatedHandlerOptions
 {
     public List<string> Projects { get; set; } = new();
 
+    public bool AzureResourceGroups { get; set; } = true;
     public bool AzureKubernetes { get; set; } = true;
     public bool AzureWebsites { get; set; } = true;
     public bool AzureStaticWebApps { get; set; } = true;

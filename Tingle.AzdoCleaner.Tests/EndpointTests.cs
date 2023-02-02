@@ -42,7 +42,7 @@ public class EndpointTests
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.Empty(await response.Content.ReadAsStringAsync());
             Assert.Empty(handler.Calls);
-        }, true);
+        });
     }
 
     [Fact]
@@ -108,10 +108,10 @@ public class EndpointTests
             Assert.Equal("123456789", token);
             Assert.Equal(new[] { 1 }, prIds);
             Assert.Empty(await response.Content.ReadAsStringAsync());
-        }, true);
+        });
     }
 
-    private async Task TestAsync(Func<HttpClient, ModifiedPullRequestUpdatedHandler, Task> executeAndVerify, bool authorize = false)
+    private async Task TestAsync(Func<HttpClient, ModifiedPullRequestUpdatedHandler, Task> executeAndVerify)
     {
         // Arrange
         var builder = new WebHostBuilder()

@@ -122,6 +122,7 @@ Preview environments normally tend to deploy resources on Azure. This tool delet
 A couple of compute types are supported.
 |Type|What is supported|
 |--|--|
+|Azure Resource Groups|Resource groups with names ending in the possible [formats](#naming-format). Useful in scenarios where everything is deployed in one group such a Virtual Machine with an IP Address, Disk, and Network Security Group.|
 |Azure Kubernetes Service (AKS)|Namespaces with names ending in the possible [formats](#naming-format). Stopped clusters are ignored.|
 |Azure Websites|Apps/websites, and slots with names  ending in the possible [formats](#naming-format)|
 |Azure Static WebApps|Apps and builds/environments with names  ending in the possible [formats](#naming-format)|
