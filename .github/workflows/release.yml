@@ -11,7 +11,7 @@ on:
     - LICENSE
     - CHANGELOG.md
     - docs/**
-    - .github/dependabot.yml
+    - .github/**
 
 jobs:
   Build:
