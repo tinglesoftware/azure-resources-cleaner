@@ -6,6 +6,7 @@ using Azure.ResourceManager.ContainerInstance;
 using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
 using Azure.ResourceManager.Resources;
+using Azure.ResourceManager.Sql;
 using k8s;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -116,6 +117,11 @@ internal class PullRequestUpdatedHandler
             if (options.AzureContainerInstances)
             {
                 await DeleteAzureContainerInstancesAsync(sub, possibleNames, cancellationToken);
+            }
+
+            if (options.AzureSql)
+            {
+                await DeleteAzureSqlAsync(sub, possibleNames, cancellationToken);
             }
         }
     }
@@ -257,6 +263,33 @@ internal class PullRequestUpdatedHandler
             }
         }
     }
+    protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var servers = sub.GetSqlServersAsync(cancellationToken: cancellationToken);
+        await foreach (var server in servers)
+        {
+            // delete matching servers
+            var name = server.Data.Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            {
+                logger.LogInformation("Deleting SQL Server '{SqlServerName}'", name);
+                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                continue; // nothing more for the server
+            }
+
+            // delete matching databases
+            var databases = server.GetSqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var database in databases)
+            {
+                var databaseName = database.Data.Name;
+                if (possibleNames.Contains(databaseName, StringComparer.OrdinalIgnoreCase))
+                {
+                    logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+            }
+        }
+    }
 
     protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyList<string> names, CancellationToken cancellationToken)
     {
@@ -336,4 +369,5 @@ public class PullRequestUpdatedHandlerOptions
     public bool AzureStaticWebApps { get; set; } = true;
     public bool AzureContainerApps { get; set; } = true;
     public bool AzureContainerInstances { get; set; } = true;
+    public bool AzureSql { get; set; } = true;
 }

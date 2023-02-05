@@ -1,6 +1,6 @@
 # Azure DevOps Cleaner
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-devops-cleaner/build.yml?branch=main&style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-devops-cleaner/release.yml?branch=main&style=flat-square)
 [![Release](https://img.shields.io/github/release/tinglesoftware/azure-devops-cleaner.svg?style=flat-square)](https://github.com/tinglesoftware/azure-devops-cleaner/releases/latest)
 [![Docker Image](https://img.shields.io/docker/image-size/tingle/azure-devops-cleaner/latest?style=flat-square)](https://hub.docker.com/r/tingle/azure-devops-cleaner)
 [![Docker Pulls](https://img.shields.io/docker/pulls/tingle/azure-devops-cleaner?style=flat-square)](https://hub.docker.com/r/tingle/azure-devops-cleaner)
@@ -124,10 +124,11 @@ A couple of compute types are supported.
 |--|--|
 |Azure Resource Groups|Resource groups with names ending in the possible [formats](#naming-format). Useful in scenarios where everything is deployed in one group such a Virtual Machine with an IP Address, Disk, and Network Security Group.|
 |Azure Kubernetes Service (AKS)|Namespaces with names ending in the possible [formats](#naming-format). Stopped clusters are ignored.|
-|Azure Websites|Apps/websites, and slots with names  ending in the possible [formats](#naming-format)|
-|Azure Static WebApps|Apps and builds/environments with names  ending in the possible [formats](#naming-format)|
-|Azure Container Apps|Container Apps with names  ending in the possible [formats](#naming-format)|
-|Azure Container Instances|Container Groups with names  ending in the possible [formats](#naming-format)|
+|Azure Websites|Apps/websites, and slots with names ending in the possible [formats](#naming-format)|
+|Azure Static WebApps|Apps and builds/environments with names ending in the possible [formats](#naming-format)|
+|Azure Container Apps|Container Apps with names ending in the possible [formats](#naming-format)|
+|Azure Container Instances|Container Groups with names ending in the possible [formats](#naming-format)|
+|Azure SQL Servers and Databases|Azure SQL servers and databases with names ending in the possible [formats](#naming-format)|
 
 ## Keeping updated
 
