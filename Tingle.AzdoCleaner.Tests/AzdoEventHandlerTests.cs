@@ -6,13 +6,13 @@ using Xunit;
 
 namespace Tingle.AzdoCleaner.Tests;
 
-public class PullRequestUpdatedHandlerTests
+public class AzdoEventHandlerTests
 {
     [Fact]
     public void TryFindProject_Works()
     {
         var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
-        var optionsAccessor = Options.Create(new PullRequestUpdatedHandlerOptions
+        var optionsAccessor = Options.Create(new AzureDevOpsEventHandlerOptions
         {
             Projects = new List<string>
             {
@@ -20,8 +20,8 @@ public class PullRequestUpdatedHandlerTests
                 "https://dev.azure.com/fabrikam/cea8cb01-dd13-4588-b27a-55fa170e4e94;987654321",
             }
         });
-        var logger = new LoggerFactory().CreateLogger<PullRequestUpdatedHandler>();
-        var handler = new PullRequestUpdatedHandler(cache, optionsAccessor, logger);
+        var logger = new LoggerFactory().CreateLogger<AzdoEventHandler>();
+        var handler = new AzdoEventHandler(cache, optionsAccessor, logger);
 
         // not found
         Assert.False(handler.TryFindProject("https://dev.azure.com/fabrikam/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c", out _, out _));
@@ -51,18 +51,18 @@ public class PullRequestUpdatedHandlerTests
     public async Task HandleAsync_Works()
     {
         var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
-        var optionsAccessor = Options.Create(new PullRequestUpdatedHandlerOptions
+        var optionsAccessor = Options.Create(new AzureDevOpsEventHandlerOptions
         {
             Projects = new List<string>
             {
                 "https://dev.azure.com/fabrikam/DefaultCollection;123456789",
             }
         });
-        var logger = new LoggerFactory().CreateLogger<PullRequestUpdatedHandler>();
-        var handler = new ModifiedPullRequestUpdatedHandler(cache, optionsAccessor, logger);
+        var logger = new LoggerFactory().CreateLogger<AzdoEventHandler>();
+        var handler = new ModifiedAzdoEventHandler(cache, optionsAccessor, logger);
 
         var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-        var payload = await JsonSerializer.DeserializeAsync<PullRequestUpdatedEvent>(stream);
+        var payload = await JsonSerializer.DeserializeAsync<AzdoEvent>(stream);
         await handler.HandleAsync(payload!);
         var (url, token, prIds) = Assert.Single(handler.Calls);
         Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection", url);
@@ -70,9 +70,9 @@ public class PullRequestUpdatedHandlerTests
         Assert.Equal(new[] { 1 }, prIds);
     }
 
-    class ModifiedPullRequestUpdatedHandler : PullRequestUpdatedHandler
+    class ModifiedAzdoEventHandler : AzdoEventHandler
     {
-        public ModifiedPullRequestUpdatedHandler(IMemoryCache cache, IOptions<PullRequestUpdatedHandlerOptions> options, ILogger<PullRequestUpdatedHandler> logger)
+        public ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
             : base(cache, options, logger) { }
 
         public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = new();

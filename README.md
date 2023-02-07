@@ -93,7 +93,7 @@ This tool looks for resources or sub-resources named in a number of formats:
 - `ra-{pull-request-identifier}`
 - `ra{pull-request-identifier}`
 
-For example: `ra-2215`, `ra2215`, and `review-app-2215` will all be handled. Make sure you name your preview environments accordingly. If you wish to contribute more reasonable patterns, check [here](https://github.com/tinglesoftware/azure-devops-cleaner/blob/7e21f338f78f6af634d8aa35d39542455c55415b/Tingle.AzdoCleaner/PullRequestUpdatedHandler.cs#L79)
+For example: `ra-2215`, `ra2215`, and `review-app-2215` will all be handled. Make sure you name your preview environments accordingly. If you wish to contribute more reasonable patterns, check [here](https://github.com/tinglesoftware/azure-devops-cleaner/blob/7e21f338f78f6af634d8aa35d39542455c55415b/Tingle.AzdoCleaner/AzdoEventHandler.cs#L100)
 
 ### Preview environments on Azure DevOps
 
