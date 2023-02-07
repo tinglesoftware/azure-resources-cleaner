@@ -49,11 +49,8 @@ internal class AzdoEventHandler
         if (type is AzureDevOpsEventType.GitPullRequestUpdated)
         {
             var resource = JsonSerializer.Deserialize<AzureDevOpsEventPullRequestResource>(model.Resource)!;
-            var adoRepository = resource.Repository!;
             var prId = resource.PullRequestId;
             var status = resource.Status;
-
-            logger.LogInformation("PR {PullRequestId} in {RepositoryUrl} status updated to {PullRequestStatus}", prId, adoRepository.RemoteUrl, status);
 
             /*
              * Only the PR status is considered. Adding consideration for merge status
@@ -63,8 +60,8 @@ internal class AzdoEventHandler
             var targetStatuses = new[] { "completed", "abandoned", "draft", };
             if (targetStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             {
-                var rawProjectUrl = adoRepository.Project?.Url ?? throw new InvalidOperationException("Project URL should not be null");
-                var remoteUrl = adoRepository.RemoteUrl ?? throw new InvalidOperationException("RemoteUrl should not be null");
+                var rawProjectUrl = resource.Repository?.Project?.Url ?? throw new InvalidOperationException("Project URL should not be null");
+                var remoteUrl = resource.Repository?.RemoteUrl ?? throw new InvalidOperationException("RemoteUrl should not be null");
                 if (!TryFindProject(rawProjectUrl, out var url, out var token)
                     && !TryFindProject(remoteUrl, out url, out token))
                 {
