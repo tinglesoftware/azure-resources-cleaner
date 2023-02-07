@@ -29,14 +29,14 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             // without Authorization header
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.Empty(await response.Content.ReadAsStringAsync());
             Assert.Empty(handler.Calls);
 
             // with wrong value for Authorization header
-            request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump5")));
             response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -50,7 +50,7 @@ public class EndpointTests
     {
         await TestAsync(async (client, handler) =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -64,7 +64,7 @@ public class EndpointTests
     {
         await TestAsync(async (client, handler) =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
             var response = await client.SendAsync(request);
@@ -81,7 +81,7 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
             var response = await client.SendAsync(request);
@@ -97,7 +97,7 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
             request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json", "utf-8");

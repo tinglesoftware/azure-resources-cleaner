@@ -54,17 +54,9 @@ internal static class ApplicationExtensions
 
     public static IEndpointConventionBuilder MapAzdoNotifications(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("/service-hooks");
+        var group = builder.MapGroup("/webhooks");
 
-        //group.MapPost("/pull-request-created", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestCreatedEvent @event) =>
-        //{
-        //    if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
-
-        //    await handler.HandleAsync(@event);
-        //    return Results.Ok();
-        //});
-
-        group.MapPost("/pull-request-updated", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestUpdatedEvent @event) =>
+        group.MapPost("/azure", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestUpdatedEvent @event) =>
         {
             if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
 

@@ -202,7 +202,7 @@
     },
     "notificationUrl": {
       "type": "string",
-      "value": "[format('https://{0}/service-hooks/pull-request-updated', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn)]"
+      "value": "[format('https://{0}/webhooks/azure', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn)]"
     }
   }
 }

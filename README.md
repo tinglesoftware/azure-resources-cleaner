@@ -81,7 +81,7 @@ If you use the [REST API](https://learn.microsoft.com/en-us/rest/api/azure/devop
 }
 ```
 
-> When using Azure Container Apps, the url should have the format:<br/>`https://azdo-cleaner.{envrionment-unique-dentifier}.{region}.azurecontainerapps.io/service-hooks/pull-request-updated`<br/>For example: `https://azdo-cleaner.blackplant-123456a7.westeurope.azurecontainerapps.io/service-hooks/pull-request-updated`
+> When using Azure Container Apps, the url should have the format:<br/>`https://azdo-cleaner.{envrionment-unique-dentifier}.{region}.azurecontainerapps.io/webhooks/azure`<br/>For example: `https://azdo-cleaner.blackplant-123456a7.westeurope.azurecontainerapps.io/webhooks/azure`
 
 ## What is supported?
 
