@@ -29,14 +29,14 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             // without Authorization header
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
             Assert.Empty(await response.Content.ReadAsStringAsync());
             Assert.Empty(handler.Calls);
 
             // with wrong value for Authorization header
-            request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump5")));
             response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -50,7 +50,7 @@ public class EndpointTests
     {
         await TestAsync(async (client, handler) =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -64,13 +64,18 @@ public class EndpointTests
     {
         await TestAsync(async (client, handler) =>
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Equal(
-                "{\"type\":\"https://tools.ietf.org/html/rfc7231#section-6.5.1\",\"title\":\"One or more validation errors occurred.\",\"status\":400,\"errors\":{\"Resource\":[\"The Resource field is required.\"]}}", await response.Content.ReadAsStringAsync());
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Contains("\"type\":\"https://tools.ietf.org/html/rfc7231#section-6.5.1\"", body);
+            Assert.Contains("\"title\":\"One or more validation errors occurred.\"", body);
+            Assert.Contains("\"status\":400", body);
+            Assert.Contains("\"SubscriptionId\":[\"The SubscriptionId field is required.\"]", body);
+            Assert.Contains("\"EventType\":[\"The EventType field is required.\"]", body);
+            Assert.Contains("\"Resource\":[\"The Resource field is required.\"]", body);
             Assert.Empty(handler.Calls);
         });
     }
@@ -81,7 +86,7 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
             var response = await client.SendAsync(request);
@@ -97,7 +102,7 @@ public class EndpointTests
         await TestAsync(async (client, handler) =>
         {
             var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-            var request = new HttpRequestMessage(HttpMethod.Post, "/service-hooks/pull-request-updated");
+            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
             request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json", "utf-8");
@@ -111,7 +116,7 @@ public class EndpointTests
         });
     }
 
-    private async Task TestAsync(Func<HttpClient, ModifiedPullRequestUpdatedHandler, Task> executeAndVerify)
+    private async Task TestAsync(Func<HttpClient, ModifiedAzdoEventHandler, Task> executeAndVerify)
     {
         // Arrange
         var builder = new WebHostBuilder()
@@ -129,10 +134,10 @@ public class EndpointTests
                 var configuration = context.Configuration;
                 services.AddRouting();
                 services.AddNotificationsHandler(configuration.GetSection("Handler"));
-                services.AddSingleton<PullRequestUpdatedHandler, ModifiedPullRequestUpdatedHandler>();
+                services.AddSingleton<AzdoEventHandler, ModifiedAzdoEventHandler>();
 
                 services.AddAuthentication()
-                        .AddBasic<BasicUserValidationService>(options => options.Realm = "AzDoCleaner");
+                        .AddBasic<BasicUserValidationService>(options => options.Realm = "AzdoCleaner");
 
                 services.AddAuthorization(options => options.FallbackPolicy = options.DefaultPolicy);
             })
@@ -144,22 +149,22 @@ public class EndpointTests
                 app.UseAuthorization();
                 app.UseEndpoints(endpoints =>
                 {
-                    endpoints.MapAzdoNotifications();
+                    endpoints.MapWebhooksAzure();
                 });
             });
         using var server = new TestServer(builder);
 
         using var scope = server.Services.CreateScope();
         var provider = scope.ServiceProvider;
-        var handler = Assert.IsType<ModifiedPullRequestUpdatedHandler>(provider.GetRequiredService<PullRequestUpdatedHandler>());
+        var handler = Assert.IsType<ModifiedAzdoEventHandler>(provider.GetRequiredService<AzdoEventHandler>());
 
         var client = server.CreateClient();
         await executeAndVerify(client, handler);
     }
 
-    class ModifiedPullRequestUpdatedHandler : PullRequestUpdatedHandler
+    class ModifiedAzdoEventHandler : AzdoEventHandler
     {
-        public ModifiedPullRequestUpdatedHandler(IMemoryCache cache, IOptions<PullRequestUpdatedHandlerOptions> options, ILogger<PullRequestUpdatedHandler> logger)
+        public ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
             : base(cache, options, logger) { }
 
         public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = new();

@@ -1,4 +1,6 @@
 {
+  "subscriptionId": "435e539d-3ce2-4283-8da9-8f3c0fe2e45e",
+  "notificationId": 3,
   "id": "af07be1b-f3ad-44c8-a7f1-c4835f2df06b",
   "eventType": "git.pullrequest.updated",
   "publisherId": "tfs",

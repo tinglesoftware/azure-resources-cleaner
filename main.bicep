@@ -123,4 +123,4 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
 
 output id string = app.id
 output fqdn string = app.properties.configuration.ingress.fqdn
-output notificationUrl string = 'https://${app.properties.configuration.ingress.fqdn}/service-hooks/pull-request-updated'
+output notificationUrl string = 'https://${app.properties.configuration.ingress.fqdn}/webhooks/azure'

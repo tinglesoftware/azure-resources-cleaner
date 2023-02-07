@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddAuthentication()
-                .AddBasic<BasicUserValidationService>(options => options.Realm = "AzDoCleaner");
+                .AddBasic<BasicUserValidationService>(options => options.Realm = "AzdoCleaner");
 
 builder.Services.AddAuthorization(options =>
 {
@@ -31,7 +31,7 @@ app.UseAuthorization();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapHealthChecks("/liveness", new HealthCheckOptions { Predicate = _ => false, }).AllowAnonymous();
 
-app.MapAzdoNotifications();
+app.MapWebhooksAzure();
 
 await app.RunAsync();
 
@@ -46,32 +46,20 @@ internal static class ApplicationExtensions
     public static IServiceCollection AddNotificationsHandler(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMemoryCache();
-        services.Configure<PullRequestUpdatedHandlerOptions>(configuration);
-        services.AddSingleton<PullRequestUpdatedHandler>();
+        services.Configure<AzureDevOpsEventHandlerOptions>(configuration);
+        services.AddSingleton<AzdoEventHandler>();
 
         return services;
     }
 
-    public static IEndpointConventionBuilder MapAzdoNotifications(this IEndpointRouteBuilder builder)
+    public static IEndpointConventionBuilder MapWebhooksAzure(this IEndpointRouteBuilder builder)
     {
-        var group = builder.MapGroup("/service-hooks");
-
-        //group.MapPost("/pull-request-created", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestCreatedEvent @event) =>
-        //{
-        //    if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
-
-        //    await handler.HandleAsync(@event);
-        //    return Results.Ok();
-        //});
-
-        group.MapPost("/pull-request-updated", async (PullRequestUpdatedHandler handler, [FromBody] PullRequestUpdatedEvent @event) =>
+        return builder.MapPost("/webhooks/azure", async (AzdoEventHandler handler, [FromBody] AzdoEvent model) =>
         {
-            if (!MiniValidator.TryValidate(@event, out var errors)) return Results.ValidationProblem(errors);
+            if (!MiniValidator.TryValidate(model, out var errors)) return Results.ValidationProblem(errors);
 
-            await handler.HandleAsync(@event);
+            await handler.HandleAsync(model);
             return Results.Ok();
         });
-
-        return group;
     }
 }
