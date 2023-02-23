@@ -9,6 +9,7 @@ updates:
   directory: "/" # Location of package manifests
   schedule:
     interval: "weekly"
+  ignore:
   # Ignore patch updates for some packages
   - dependency-name: "Microsoft.*"
     update-types: ["version-update:semver-patch"]
