@@ -35,6 +35,7 @@ param minReplicas int = 0
 param maxReplicas int = 1
 
 var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
+var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
 
 /* Managed Identity */
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -76,7 +77,7 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
           }
         ]
       }
-      registries: hasDockerImageRegistry ? [
+      registries: isAcrServer ? [
         {
           identity: managedIdentity.id
           server: dockerImageRegistry
