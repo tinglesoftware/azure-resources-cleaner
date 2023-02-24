@@ -38,7 +38,7 @@
       }
     },
     "notificationsPassword": {
-      "type": "secureString",
+      "type": "securestring",
       "metadata": {
         "description": "Notifications password."
       }
@@ -50,7 +50,7 @@
       }
     },
     "azureDevOpsProjectToken": {
-      "type": "secureString",
+      "type": "securestring",
       "metadata": {
         "description": "Token for accessing the project."
       }
