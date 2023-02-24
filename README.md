@@ -2,8 +2,6 @@
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-devops-cleaner/release.yml?branch=main&style=flat-square)
 [![Release](https://img.shields.io/github/release/tinglesoftware/azure-devops-cleaner.svg?style=flat-square)](https://github.com/tinglesoftware/azure-devops-cleaner/releases/latest)
-[![Docker Image](https://img.shields.io/docker/image-size/tingle/azure-devops-cleaner/latest?style=flat-square)](https://hub.docker.com/r/tingle/azure-devops-cleaner)
-[![Docker Pulls](https://img.shields.io/docker/pulls/tingle/azure-devops-cleaner?style=flat-square)](https://hub.docker.com/r/tingle/azure-devops-cleaner)
 [![license](https://img.shields.io/github/license/tinglesoftware/azure-devops-cleaner.svg?style=flat-square)](LICENSE)
 
 This repository houses a convenience tool for cleaning up resources based on the terminal status of pull requests in Azure DevOps. This is particularly useful in removing the reviewApp resources in environments, that created automatically by Azure Pipelines. In addition, it will also cleanup resources deployed to Azure.
@@ -38,8 +36,8 @@ The easiest means of deployment is to use the relevant button above. You can als
 |azureDevOpsProjectToken|Personal Access Token (PAT) for accessing the Azure DevOps project. It must have `Environment (Read & Manage)` permissions.|Yes|**none**|
 |location|Location to deploy the resources.|No|&lt;resource-group-location&gt;|
 |name|The name of all resources.|No|`azdo-cleaner`|
-|dockerImageRegistry|The docker registry to use when pulling the docker container if needed. By default this will use docker hub. This can be useful if the container needs to come from an internal docker registry mirror or alternative source for testing. If the registry requires authentication ensure to assign `acrPull` permissions to the managed identity.<br />Example: `contoso.azurecr.io`|No|&lt;empty&gt;|
-|dockerImageRepository|The docker container repository to use when pulling the docker container if needed. This can be useful if the default container requires customizations such as custom certs.|No|`tingle/azure-devops-cleaner`|
+|dockerImageRegistry|The docker registry to use when pulling the docker container if needed. By default this will GitHub Container Registry. This can be useful if the container needs to come from an internal docker registry mirror or alternative source for testing. If the registry requires authentication ensure to assign `acrPull` permissions to the managed identity.<br />Example: `contoso.azurecr.io`|No|`ghcr.io`|
+|dockerImageRepository|The docker container repository to use when pulling the docker container if needed. This can be useful if the default container requires customizations such as custom certs.|No|`tinglesoftware/azure-devops-cleaner`|
 |dockerImageTag|The image tag to use when pulling the docker container. A tag also defines the version. You should avoid using `latest`. Example: `0.1.0`|No|&lt;version-downloaded&gt;|
 |minReplicas|The minimum number of replicas to required for the deployment. In most cases, the rate of creating and merging pull requests is a less than 10 per hour so there is no need for high availability. If you wish to access the log stream through out you may want to set this to `1`, otherwise it will only be accessible when there are incoming requests and 5 minutes after requests when it is scaled down.|No|0|
 |maxReplicas|The maximum number of replicas when automatic scaling engages. In most cases, the are less than 10 merged/abandoned pull requests so there is no need to over scale.|No|1|

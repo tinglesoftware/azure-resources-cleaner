@@ -4,11 +4,11 @@ param location string = resourceGroup().location
 @description('Name of all resources.')
 param name string = 'azdo-cleaner'
 
-@description('Registry of the docker image. E.g. "contoso.azurecr.io". Leave empty unless you have a private registry mirroring the image from docker hub')
-param dockerImageRegistry string = ''
+@description('Registry of the docker image. E.g. "contoso.azurecr.io". Leave empty unless you have a private registry mirroring the official image.')
+param dockerImageRegistry string = 'ghcr.io'
 
 @description('Registry and repository of the docker image. Ideally, you do not need to edit this value.')
-param dockerImageRepository string = 'tingle/azure-devops-cleaner'
+param dockerImageRepository string = 'tinglesoftware/azure-devops-cleaner'
 
 @description('Tag of the docker image.')
 param dockerImageTag string = '#{GITVERSION_NUGETVERSIONV2}#'

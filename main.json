@@ -18,14 +18,14 @@
     },
     "dockerImageRegistry": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "ghcr.io",
       "metadata": {
-        "description": "Registry of the docker image. E.g. \"contoso.azurecr.io\". Leave empty unless you have a private registry mirroring the image from docker hub"
+        "description": "Registry of the docker image. E.g. \"contoso.azurecr.io\". Leave empty unless you have a private registry mirroring the official image."
       }
     },
     "dockerImageRepository": {
       "type": "string",
-      "defaultValue": "tingle/azure-devops-cleaner",
+      "defaultValue": "tinglesoftware/azure-devops-cleaner",
       "metadata": {
         "description": "Registry and repository of the docker image. Ideally, you do not need to edit this value."
       }
