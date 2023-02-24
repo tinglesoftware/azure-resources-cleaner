@@ -134,13 +134,7 @@ If you wish to keep your deployment updated, you can create a private repository
 
 You can also choose to watch the repository so as to be notified when a new release is published.
 
-TODO:
-
-- Support deployment to Azure Functions (Dynamic Tier and existing App Service Plan)
-- Support deployment to Kubernetes via Kustomize
-- Support deployment to Kubernetes via HELM
-- Support deployment to Kubernetes via single file in the release artifacts
-- Support deployment from Azure Marketplace
+TODO: Support deployment from Azure Marketplace
 
 ### Issues &amp; Comments
 
