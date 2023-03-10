@@ -1,6 +1,6 @@
 # Azure DevOps Cleaner
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-devops-cleaner/release.yml?branch=main&style=flat-square)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-devops-cleaner/build.yml?branch=main&style=flat-square)
 [![Release](https://img.shields.io/github/release/tinglesoftware/azure-devops-cleaner.svg?style=flat-square)](https://github.com/tinglesoftware/azure-devops-cleaner/releases/latest)
 [![license](https://img.shields.io/github/license/tinglesoftware/azure-devops-cleaner.svg?style=flat-square)](LICENSE)
 
