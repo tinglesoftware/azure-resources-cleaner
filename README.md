@@ -134,8 +134,6 @@ If you wish to keep your deployment updated, you can create a private repository
 
 You can also choose to watch the repository so as to be notified when a new release is published.
 
-TODO: Support deployment from Azure Marketplace
-
 ### Issues &amp; Comments
 
 Please leave all comments, bugs, requests, and issues on the Issues page. We'll respond to your request ASAP!

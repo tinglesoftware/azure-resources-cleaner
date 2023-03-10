@@ -106,6 +106,7 @@ internal class AzdoEventHandler
         {
             logger.LogDebug("Searching in subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
 
+            // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
             if (options.AzureResourceGroups)
             {
                 await DeleteAzureResourceGroupsAsync(sub, possibleNames, cancellationToken);
