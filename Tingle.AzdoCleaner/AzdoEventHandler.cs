@@ -295,14 +295,26 @@ internal class AzdoEventHandler
                 continue; // nothing more for the server
             }
 
+            // delete matching elastic pools
+            var pools = server.GetElasticPools().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var pool in pools)
+            {
+                var poolName = pool.Data.Name;
+                if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+                {
+                    logger.LogInformation("Deleting elastic pool '{DatabaseName}' in Website '{ResourceId}'", poolName, pool.Data.Id);
+                    await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+            }
+
             // delete matching databases
             var databases = server.GetSqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
-                if (possibleNames.Contains(databaseName, StringComparer.OrdinalIgnoreCase))
+                if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
                 {
-                    logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}'", databaseName, database.Data.Id);
+                    logger.LogInformation("Deleting database '{DatabaseName}' in Website '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
             }
