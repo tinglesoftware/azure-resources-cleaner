@@ -194,18 +194,6 @@ internal class AzdoEventHandler
         var sites = sub.GetWebSitesAsync(cancellationToken);
         await foreach (var site in sites)
         {
-            // delete matching sites
-            var name = site.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
-            {
-                logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
-                await site.DeleteAsync(Azure.WaitUntil.Completed,
-                                       deleteMetrics: true,
-                                       deleteEmptyServerFarm: false,
-                                       cancellationToken: cancellationToken);
-                continue; // nothing more for the site
-            }
-
             // delete matching slots
             var slots = site.GetWebSiteSlots().GetAllAsync(cancellationToken);
             await foreach (var slot in slots)
@@ -219,6 +207,18 @@ internal class AzdoEventHandler
                                            deleteEmptyServerFarm: false,
                                            cancellationToken: cancellationToken);
                 }
+            }
+
+            // delete matching sites
+            var name = site.Data.Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n))
+            {
+                //site.Data.AppServicePlanId
+                logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
+                await site.DeleteAsync(Azure.WaitUntil.Completed,
+                                       deleteMetrics: true,
+                                       deleteEmptyServerFarm: false,
+                                       cancellationToken: cancellationToken);
             }
         }
     }
