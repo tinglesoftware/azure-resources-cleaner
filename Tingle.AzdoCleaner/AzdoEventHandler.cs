@@ -162,6 +162,15 @@ internal class AzdoEventHandler
         var clusters = sub.GetContainerServiceManagedClustersAsync(cancellationToken);
         await foreach (var cluster in clusters)
         {
+            // delete matching clusters
+            var name = cluster.Data.Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            {
+                logger.LogInformation("Deleting AKS cluster '{ClusterName}' at '{ResourceId}'", name, cluster.Data.Id);
+                await cluster.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                continue; // nothing more for the cluster
+            }
+
             // skip stopped clusters
             if (cluster.Data.PowerStateCode == ContainerServiceStateCode.Stopped) continue;
 
