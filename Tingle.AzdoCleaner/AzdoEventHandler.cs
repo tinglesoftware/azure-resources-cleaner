@@ -290,7 +290,19 @@ internal class AzdoEventHandler
             var name = server.Data.Name;
             if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
             {
-                logger.LogInformation("Deleting SQL Server '{SqlServerName}'", name);
+                // delete databases in the server
+                logger.LogInformation("Deleting databases for SQL Server '{SqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                var serverDatabases = server.GetSqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+                await foreach (var database in serverDatabases)
+                {
+                    var databaseName = database.Data.Name;
+                    if (databaseName.Equals("master")) continue;
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+
+                // delete the actual server
+                logger.LogInformation("Deleting SQL Server '{SqlServerName}' at '{ResourceId}'", name, server.Data.Id);
                 await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 continue; // nothing more for the server
             }
@@ -302,7 +314,19 @@ internal class AzdoEventHandler
                 var poolName = pool.Data.Name;
                 if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
                 {
-                    logger.LogInformation("Deleting elastic pool '{DatabaseName}' in Website '{ResourceId}'", poolName, pool.Data.Id);
+                    // delete databases in the pool
+                    logger.LogInformation("Deleting databases for elastic pool '{ElasticPoolName}' at '{ResourceId}'", poolName, pool.Data.Id);
+                    var poolDatabases = pool.GetDatabasesAsync(cancellationToken);
+                    await foreach (var database in poolDatabases)
+                    {
+                        var databaseName = database.Data.Name;
+                        if (databaseName.Equals("master")) continue;
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
+
+                    // delete the actual pool
+                    logger.LogInformation("Deleting elastic pool '{ElasticPoolName}' at '{ResourceId}'", poolName, pool.Data.Id);
                     await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
             }
@@ -312,9 +336,10 @@ internal class AzdoEventHandler
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
+                if (databaseName.Equals("master")) continue;
                 if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' in Website '{ResourceId}'", databaseName, database.Data.Id);
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
             }
