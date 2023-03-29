@@ -1,4 +1,5 @@
-﻿using Azure.Identity;
+﻿using Azure.Core;
+using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.AppContainers;
 using Azure.ResourceManager.AppService;
@@ -209,9 +210,10 @@ internal class AzdoEventHandler
                 }
             }
 
-            // delete matching sites
+            // delete matching sites (either the name or the plan indicates a reviewapp)
             var name = site.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n))
+            var planName = new ResourceIdentifier(site.Data.AppServicePlanId!).Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n) || planName.EndsWith(n) || planName.StartsWith(n)))
             {
                 //site.Data.AppServicePlanId
                 logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
