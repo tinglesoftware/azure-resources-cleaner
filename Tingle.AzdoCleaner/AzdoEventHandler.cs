@@ -271,6 +271,18 @@ internal class AzdoEventHandler
                 await app.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
             }
         }
+
+        // delete matching environments
+        var envs = sub.GetContainerAppManagedEnvironmentsAsync(cancellationToken);
+        await foreach (var env in envs)
+        {
+            var name = env.Data.Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            {
+                logger.LogInformation("Deleting environment '{EnvironmentName}' at '{ResourceId}'", name, env.Data.Id);
+                await env.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+            }
+        }
     }
     protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
