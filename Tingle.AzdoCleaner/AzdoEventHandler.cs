@@ -259,11 +259,13 @@ internal class AzdoEventHandler
     }
     protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
     {
+        // delete matching container apps (either the name or the environment indicates a reviewapp)
         var apps = sub.GetContainerAppsAsync(cancellationToken);
         await foreach (var app in apps)
         {
             var name = app.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            var planName = new ResourceIdentifier(app.Data.ManagedEnvironmentId!).Name;
+            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n) || planName.EndsWith(n) || planName.StartsWith(n)))
             {
                 logger.LogInformation("Deleting app '{ContainerAppName}' in Environment '{ResourceId}'", name, app.Data.ManagedEnvironmentId);
                 await app.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
