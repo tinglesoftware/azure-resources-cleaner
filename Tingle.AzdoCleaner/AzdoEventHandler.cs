@@ -1,5 +1,4 @@
-﻿using Azure.Core;
-using Azure.Identity;
+﻿using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.AppContainers;
 using Azure.ResourceManager.AppService;
@@ -95,7 +94,7 @@ internal class AzdoEventHandler
         var credential = new DefaultAzureCredential();
         var client = new ArmClient(credential);
 
-        var possibleNames = prIds.SelectMany(prId => new[] { $"review-app-{prId}", $"ra-{prId}", $"ra{prId}", }).ToHashSet().ToList();
+        var possibleNames = MakePossibleNames(prIds);
         if (token is not null)
         {
             await DeleteReviewAppsEnvironmentsAsync(url, token, possibleNames, cancellationToken);
@@ -144,27 +143,27 @@ internal class AzdoEventHandler
             }
         }
     }
-    protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var groups = sub.GetResourceGroups();
         await foreach (var group in groups)
         {
             var name = group.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 logger.LogInformation("Deleting resource group '{ResourceGroupName}' at '{ResourceId}'", name, group.Data.Id);
                 await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
             }
         }
     }
-    protected virtual async Task DeleteAzureKubernetesNamespacesAsync(SubscriptionResource sub, IReadOnlyList<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureKubernetesNamespacesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var clusters = sub.GetContainerServiceManagedClustersAsync(cancellationToken);
         await foreach (var cluster in clusters)
         {
             // delete matching clusters
             var name = cluster.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 logger.LogInformation("Deleting AKS cluster '{ClusterName}' at '{ResourceId}'", name, cluster.Data.Id);
                 await cluster.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
@@ -182,7 +181,7 @@ internal class AzdoEventHandler
                             possibleNames.Count,
                             string.Join(",", possibleNames));
             var namespaces = await kubeClient.ListNamespaceAsync(cancellationToken: cancellationToken); // using labelSelector causes problems, no idea why
-            var found = namespaces.Items.Where(ns => possibleNames.Any(n => ns.Metadata.Name.EndsWith(n) || ns.Metadata.Name.StartsWith(n))).ToList();
+            var found = namespaces.Items.Where(ns => NameMatchesExpectedFormat(possibleNames, ns.Metadata.Name)).ToList();
             if (found.Count > 0)
             {
                 var names = found.Select(n => n.Metadata.Name).ToList();
@@ -199,7 +198,7 @@ internal class AzdoEventHandler
             }
         }
     }
-    protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetWebSitesAsync(cancellationToken);
         await foreach (var site in sites)
@@ -209,7 +208,7 @@ internal class AzdoEventHandler
             await foreach (var slot in slots)
             {
                 var slotName = slot.Data.Name;
-                if (possibleNames.Contains(slotName, StringComparer.OrdinalIgnoreCase))
+                if (NameMatchesExpectedFormat(possibleNames, slotName))
                 {
                     logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}'", slotName, site.Data.Id);
                     await slot.DeleteAsync(Azure.WaitUntil.Completed,
@@ -221,8 +220,8 @@ internal class AzdoEventHandler
 
             // delete matching sites (either the name or the plan indicates a reviewapp)
             var name = site.Data.Name;
-            var planName = new ResourceIdentifier(site.Data.AppServicePlanId!).Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n) || planName.EndsWith(n) || planName.StartsWith(n)))
+            var planName = site.Data.AppServicePlanId.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, planName))
             {
                 //site.Data.AppServicePlanId
                 logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
@@ -233,14 +232,14 @@ internal class AzdoEventHandler
             }
         }
     }
-    protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var sites = sub.GetStaticSitesAsync(cancellationToken);
         await foreach (var site in sites)
         {
             // delete matching sites
             var name = site.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 logger.LogInformation("Deleting static site '{WebsiteName}'", name);
                 await site.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
@@ -258,7 +257,7 @@ internal class AzdoEventHandler
             await foreach (var build in builds)
             {
                 var buildName = build.Data.Name;
-                if (possibleNames.Contains(buildName, StringComparer.OrdinalIgnoreCase))
+                if (NameMatchesExpectedFormat(possibleNames, buildName))
                 {
                     logger.LogInformation("Deleting build '{BuildName}' in Static WebApp '{ResourceId}'", buildName, site.Data.Id);
                     await build.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
@@ -266,15 +265,15 @@ internal class AzdoEventHandler
             }
         }
     }
-    protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         // delete matching container apps (either the name or the environment indicates a reviewapp)
         var apps = sub.GetContainerAppsAsync(cancellationToken);
         await foreach (var app in apps)
         {
             var name = app.Data.Name;
-            var planName = new ResourceIdentifier(app.Data.ManagedEnvironmentId!).Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n) || planName.EndsWith(n) || planName.StartsWith(n)))
+            var envName = app.Data.EnvironmentId.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, envName))
             {
                 logger.LogInformation("Deleting app '{ContainerAppName}' in Environment '{ResourceId}'", name, app.Data.ManagedEnvironmentId);
                 await app.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
@@ -286,34 +285,34 @@ internal class AzdoEventHandler
         await foreach (var env in envs)
         {
             var name = env.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 logger.LogInformation("Deleting environment '{EnvironmentName}' at '{ResourceId}'", name, env.Data.Id);
                 await env.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
             }
         }
     }
-    protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var groups = sub.GetContainerGroupsAsync(cancellationToken);
         await foreach (var group in groups)
         {
             var name = group.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 logger.LogInformation("Deleting app '{ContainerGroupName}' at '{ResourceId}'", name, group.Data.Id);
                 await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
             }
         }
     }
-    protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, List<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var servers = sub.GetSqlServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
         {
             // delete matching servers
             var name = server.Data.Name;
-            if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+            if (NameMatchesExpectedFormat(possibleNames, name))
             {
                 // delete databases in the server
                 logger.LogInformation("Deleting databases for SQL Server '{SqlServerName}' at '{ResourceId}'", name, server.Data.Id);
@@ -337,7 +336,7 @@ internal class AzdoEventHandler
             await foreach (var pool in pools)
             {
                 var poolName = pool.Data.Name;
-                if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+                if (NameMatchesExpectedFormat(possibleNames, poolName))
                 {
                     // delete databases in the pool
                     logger.LogInformation("Deleting databases for elastic pool '{ElasticPoolName}' at '{ResourceId}'", poolName, pool.Data.Id);
@@ -362,7 +361,7 @@ internal class AzdoEventHandler
             {
                 var databaseName = database.Data.Name;
                 if (databaseName.Equals("master")) continue;
-                if (possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n)))
+                if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
@@ -371,10 +370,9 @@ internal class AzdoEventHandler
         }
     }
 
-    protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyList<string> names, CancellationToken cancellationToken)
+    protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var connection = CreateVssConnection(url, token);
-
         var client = await connection.GetClientAsync<TaskAgentHttpClient>(cancellationToken);
 
         // iterate through all environments and resources
@@ -393,7 +391,7 @@ internal class AzdoEventHandler
 
             foreach (var resource in environment.Resources)
             {
-                if (names.Contains(resource.Name, StringComparer.OrdinalIgnoreCase))
+                if (NameMatchesExpectedFormat(possibleNames, resource.Name))
                 {
                     logger.LogInformation("Deleting resource '{EnvironmentName}/{ResourceName}' in '{ProjectUrl}'", environment.Name, resource.Name, url);
                     await client.DeleteKubernetesResourceAsync(url.ProjectIdOrName, environment.Id, resource.Id, cancellationToken: cancellationToken);
@@ -410,11 +408,23 @@ internal class AzdoEventHandler
         var response = await cluster.GetClusterAdminCredentialsAsync(cancellationToken: cancellationToken);
         var credentials = response.Value;
         var kubeConfig = FindConfig(credentials, "admin")
-                         ?? FindConfig(credentials, "clusterAdmin")
-                         ?? throw new InvalidOperationException("Unable to get the cluster credentials");
+                      ?? FindConfig(credentials, "clusterAdmin")
+                      ?? throw new InvalidOperationException("Unable to get the cluster credentials");
         using var ms = new MemoryStream(kubeConfig.Value);
         return await KubernetesClientConfiguration.BuildConfigFromConfigFileAsync(ms);
     }
+
+    internal static IReadOnlyCollection<string> MakePossibleNames(IEnumerable<int> ids)
+    {
+        return ids.SelectMany(prId => new[] { $"review-app-{prId}", $"ra-{prId}", $"ra{prId}", })
+                  .ToHashSet();
+    }
+
+    internal static bool NameMatchesExpectedFormat(IReadOnlyCollection<string> possibleNames, Azure.Core.ResourceIdentifier id)
+        => NameMatchesExpectedFormat(possibleNames, id.Name);
+
+    internal static bool NameMatchesExpectedFormat(IReadOnlyCollection<string> possibleNames, string name)
+        => possibleNames.Any(n => name.EndsWith(n) || name.StartsWith(n));
 
     protected virtual VssConnection CreateVssConnection(AzdoProjectUrl url, string token)
     {
