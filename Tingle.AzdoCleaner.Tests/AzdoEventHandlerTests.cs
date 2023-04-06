@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Azure.Core;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
@@ -45,6 +46,41 @@ public class AzdoEventHandlerTests
         Assert.True(handler.TryFindProject("https://tingle@dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam", out url, out token));
         Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection", url);
         Assert.Equal("123456789", token);
+    }
+
+    [Fact]
+    public void MakePossibleNames_Works()
+    {
+        Assert.Equal(new[] { "review-app-23765", "ra-23765", "ra23765", },
+            AzdoEventHandler.MakePossibleNames(new[] { 23765, }));
+        Assert.Equal(new[] { "review-app-23765", "ra-23765", "ra23765", "review-app-50", "ra-50", "ra50", },
+            AzdoEventHandler.MakePossibleNames(new[] { 23765, 50, }));
+    }
+
+    [Fact]
+    public void NameMatchesExpectedFormat_Works()
+    {
+        var possibleNames = AzdoEventHandler.MakePossibleNames(new[] { 23765, });
+
+        // works for all in exact format
+        var modified = possibleNames;
+        Assert.All(modified, pn => AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, pn));
+
+        // works when prefixed
+        modified = possibleNames.Select(pn => $"bla:{pn}").ToList();
+        Assert.All(modified, pn => AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, pn));
+
+        // works when suffixed
+        modified = possibleNames.Select(pn => $"{pn}:bla").ToList();
+        Assert.All(modified, pn => AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, pn));
+
+        // works for AppServicePlan
+        var planId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.Web/serverfarms/fabrikam-sites-ra23765");
+        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, planId));
+
+        // works for ManagedEnvironment
+        var envId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.App/managedEnvironments/fabrikam-sites-ra-23765");
+        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, envId));
     }
 
     [Fact]
