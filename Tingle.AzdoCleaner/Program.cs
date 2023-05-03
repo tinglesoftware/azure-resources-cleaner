@@ -54,11 +54,16 @@ internal static class ApplicationExtensions
 
     public static IEndpointConventionBuilder MapWebhooksAzure(this IEndpointRouteBuilder builder)
     {
-        return builder.MapPost("/webhooks/azure", async (AzdoEventHandler handler, [FromBody] AzdoEvent model) =>
+        return builder.MapPost("/webhooks/azure", (AzdoEventHandler handler, [FromBody] AzdoEvent model) =>
         {
             if (!MiniValidator.TryValidate(model, out var errors)) return Results.ValidationProblem(errors);
 
-            await handler.HandleAsync(model);
+            /*
+             * This is not awaited because the process may take longer that the caller's request timeout (suspected to be 100 seconds).
+             * Azure DevOps seeps to disabled [Enabled (restricted)] the service hook when one (may be two) request is timed out which
+             * can make one wonder why new PR completions are not getting handled.
+             */
+            _ = handler.HandleAsync(model);
             return Results.Ok();
         });
     }
