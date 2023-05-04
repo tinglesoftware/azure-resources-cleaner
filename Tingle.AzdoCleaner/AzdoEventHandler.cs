@@ -5,6 +5,8 @@ using Azure.ResourceManager.AppService;
 using Azure.ResourceManager.ContainerInstance;
 using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
+using Azure.ResourceManager.CosmosDB;
+using Azure.ResourceManager.CosmosDB.Models;
 using Azure.ResourceManager.PostgreSql;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Sql;
@@ -136,6 +138,11 @@ internal class AzdoEventHandler
             if (options.AzureContainerInstances)
             {
                 await DeleteAzureContainerInstancesAsync(sub, possibleNames, cancellationToken);
+            }
+
+            if (options.AzureCosmosDB)
+            {
+                await DeleteAzureCosmosDBAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzurePostgreSql)
@@ -308,6 +315,156 @@ internal class AzdoEventHandler
             {
                 logger.LogInformation("Deleting app '{ContainerGroupName}' at '{ResourceId}'", name, group.Data.Id);
                 await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+            }
+        }
+    }
+    protected virtual async Task DeleteAzureCosmosDBAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var accounts = sub.GetCosmosDBAccountsAsync(cancellationToken);
+        await foreach (var account in accounts)
+        {
+            // delete matching accounts
+            var name = account.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                logger.LogInformation("Deleting CosmosDB account '{AccountName}' at '{ResourceId}'", name, account.Data.Id);
+                await account.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                continue; // nothing more for the account
+            }
+
+            // delete matching MongoDB databases and collections
+            if (account.Data.Kind == CosmosDBAccountKind.MongoDB)
+            {
+                // delete matching databases
+                var databases = account.GetMongoDBDatabases().GetAllAsync(cancellationToken);
+                await foreach (var database in databases)
+                {
+                    var databaseName = database.Data.Name;
+                    if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                    {
+                        logger.LogInformation("Deleting CosmosDB for MongoDB database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        continue; // nothing more for the database
+                    }
+
+                    // delete matching collections
+                    var collections = database.GetMongoDBCollections().GetAllAsync(cancellationToken);
+                    await foreach (var collection in collections)
+                    {
+                        var collectionName = collection.Data.Name;
+                        if (NameMatchesExpectedFormat(possibleNames, collectionName))
+                        {
+                            logger.LogInformation("Deleting CosmosDB for MongoDB database collection '{CollectionName}' at '{ResourceId}'", collectionName, database.Data.Id);
+                            await collection.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
+                    }
+                }
+                continue; // nothing more for the account
+            }
+
+            // delete matching Cassandra Keyspaces and tables
+            if (account.Data.Capabilities.Any(c => c.Name == "EnableCassandra"))
+            {
+                var keyspaces = account.GetCassandraKeyspaces().GetAllAsync(cancellationToken);
+                await foreach (var keyspace in keyspaces)
+                {
+                    // delete matching keyspaces
+                    var keyspaceName = keyspace.Data.Name;
+                    if (NameMatchesExpectedFormat(possibleNames, keyspaceName))
+                    {
+                        logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace '{KeyspaceName}' at '{ResourceId}'", keyspaceName, keyspace.Data.Id);
+                        await keyspace.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        continue; // nothing more for the keyspace
+                    }
+
+                    // delete matching tables
+                    var tables = keyspace.GetCassandraTables().GetAllAsync(cancellationToken);
+                    await foreach (var table in tables)
+                    {
+                        var tableName = table.Data.Name;
+                        if (NameMatchesExpectedFormat(possibleNames, tableName))
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
+                            await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
+                    }
+                }
+            }
+
+            // delete matching Tables
+            if (account.Data.Capabilities.Any(c => c.Name == "EnableTable"))
+            {
+                var tables = account.GetCosmosDBTables().GetAllAsync(cancellationToken);
+                await foreach (var table in tables)
+                {
+                    var tableName = table.Data.Name;
+                    if (NameMatchesExpectedFormat(possibleNames, tableName))
+                    {
+                        logger.LogInformation("Deleting CosmosDB Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
+                        await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
+                }
+            }
+
+            // delete matching Gremlin databases and graphs
+            if (account.Data.Capabilities.Any(c => c.Name == "EnableGremlin"))
+            {
+                var databases = account.GetGremlinDatabases().GetAllAsync(cancellationToken);
+                await foreach (var database in databases)
+                {
+                    // delete matching databases
+                    var databaseName = database.Data.Name;
+                    if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                    {
+                        logger.LogInformation("Deleting CosmosDB for Germlin database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        continue; // nothing more for the database
+                    }
+
+                    // delete matching graphs
+                    var graphs = database.GetGremlinGraphs().GetAllAsync(cancellationToken);
+                    await foreach (var graph in graphs)
+                    {
+                        var graphName = graph.Data.Name;
+                        if (NameMatchesExpectedFormat(possibleNames, graphName))
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Germlin database graph '{GraphName}' at '{ResourceId}'", graphName, graph.Data.Id);
+                            await graph.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
+                    }
+                }
+            }
+
+            // delete matching SQL databases and containers
+            if (account.Data.Kind == CosmosDBAccountKind.GlobalDocumentDB)
+            {
+                if (account.Data.Capabilities.All(c => c.Name != "EnableCassandra" && c.Name != "EnableTable" && c.Name != "EnableGremlin"))
+                {
+                    var databases = account.GetCosmosDBSqlDatabases().GetAllAsync(cancellationToken);
+                    await foreach (var database in databases)
+                    {
+                        // delete matching databases
+                        var databaseName = database.Data.Name;
+                        if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                        {
+                            logger.LogInformation("Deleting CosmosDB for SQL database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                            await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            continue; // nothing more for the database
+                        }
+
+                        // delete matching containers
+                        var containers = database.GetCosmosDBSqlContainers().GetAllAsync(cancellationToken);
+                        await foreach (var container in containers)
+                        {
+                            var containerName = container.Data.Name;
+                            if (NameMatchesExpectedFormat(possibleNames, containerName))
+                            {
+                                logger.LogInformation("Deleting CosmosDB for SQL database container '{ContainerName}' at '{ResourceId}'", containerName, container.Data.Id);
+                                await container.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -505,6 +662,7 @@ public class AzureDevOpsEventHandlerOptions
     public bool AzureStaticWebApps { get; set; } = true;
     public bool AzureContainerApps { get; set; } = true;
     public bool AzureContainerInstances { get; set; } = true;
+    public bool AzureCosmosDB { get; set; } = true;
     public bool AzurePostgreSql { get; set; } = true;
     public bool AzureSql { get; set; } = true;
 }
