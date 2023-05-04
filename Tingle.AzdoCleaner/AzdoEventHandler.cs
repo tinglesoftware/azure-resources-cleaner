@@ -8,6 +8,7 @@ using Azure.ResourceManager.ContainerService.Models;
 using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
 using Azure.ResourceManager.MySql;
+using Azure.ResourceManager.MySql.FlexibleServers;
 using Azure.ResourceManager.PostgreSql;
 using Azure.ResourceManager.PostgreSql.FlexibleServers;
 using Azure.ResourceManager.Resources;
@@ -150,6 +151,7 @@ internal class AzdoEventHandler
             if (options.AzureMySql)
             {
                 await DeleteAzureMySqlAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureMySqlFlexibleAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzurePostgreSql)
@@ -503,6 +505,44 @@ internal class AzdoEventHandler
 
             // delete matching databases
             var databases = server.GetMySqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var database in databases)
+            {
+                var databaseName = database.Data.Name;
+                if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+            }
+        }
+    }
+    protected virtual async Task DeleteAzureMySqlFlexibleAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var servers = sub.GetMySqlFlexibleServersAsync(cancellationToken: cancellationToken);
+        await foreach (var server in servers)
+        {
+            // delete matching servers
+            var name = server.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                // delete databases in the server
+                logger.LogInformation("Deleting databases for MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                var serverDatabases = server.GetMySqlFlexibleServerDatabases().GetAllAsync(cancellationToken: cancellationToken);
+                await foreach (var database in serverDatabases)
+                {
+                    var databaseName = database.Data.Name;
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+
+                // delete the actual server
+                logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                continue; // nothing more for the server
+            }
+
+            // delete matching databases
+            var databases = server.GetMySqlFlexibleServerDatabases().GetAllAsync(cancellationToken: cancellationToken);
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
