@@ -75,12 +75,20 @@ public class AzdoEventHandlerTests
         Assert.All(modified, pn => AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, pn));
 
         // works for AppServicePlan
-        var planId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.Web/serverfarms/fabrikam-sites-ra23765");
-        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, planId));
+        var resourceId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.Web/serverfarms/fabrikam-sites-ra23765");
+        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, resourceId));
 
         // works for ManagedEnvironment
-        var envId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.App/managedEnvironments/fabrikam-sites-ra-23765");
-        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, envId));
+        resourceId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.App/managedEnvironments/fabrikam-sites-ra-23765");
+        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, resourceId));
+
+        // works for Azure SQL Database
+        resourceId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.Sql/servers/fabrikam/databases/fabrikam-sites-ra-23765");
+        Assert.True(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, resourceId));
+
+        // skips Azure SQL Database master database
+        resourceId = new ResourceIdentifier($"/subscriptions/{Guid.Empty}/resourceGroups/FABRIKAM/providers/Microsoft.Sql/servers/fabrikam/databases/master");
+        Assert.False(AzdoEventHandler.NameMatchesExpectedFormat(possibleNames, resourceId));
     }
 
     [Fact]

@@ -491,7 +491,6 @@ internal class AzdoEventHandler
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    if (databaseName.Equals("master")) continue;
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
@@ -507,7 +506,6 @@ internal class AzdoEventHandler
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
-                if (databaseName.Equals("master")) continue;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
@@ -531,7 +529,6 @@ internal class AzdoEventHandler
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    if (databaseName.Equals("master")) continue;
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
@@ -547,7 +544,6 @@ internal class AzdoEventHandler
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
-                if (databaseName.Equals("master")) continue;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
@@ -571,7 +567,6 @@ internal class AzdoEventHandler
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    if (databaseName.Equals("master")) continue;
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
@@ -587,7 +582,6 @@ internal class AzdoEventHandler
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
-                if (databaseName.Equals("master")) continue;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
@@ -611,7 +605,6 @@ internal class AzdoEventHandler
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    if (databaseName.Equals("master")) continue;
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
@@ -635,7 +628,6 @@ internal class AzdoEventHandler
                     await foreach (var database in poolDatabases)
                     {
                         var databaseName = database.Data.Name;
-                        if (databaseName.Equals("master")) continue;
                         logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                         await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                     }
@@ -651,7 +643,6 @@ internal class AzdoEventHandler
             await foreach (var database in databases)
             {
                 var databaseName = database.Data.Name;
-                if (databaseName.Equals("master")) continue;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
