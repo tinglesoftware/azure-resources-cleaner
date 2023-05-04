@@ -5,6 +5,7 @@ using Azure.ResourceManager.AppService;
 using Azure.ResourceManager.ContainerInstance;
 using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
+using Azure.ResourceManager.PostgreSql;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Sql;
 using k8s;
@@ -135,6 +136,11 @@ internal class AzdoEventHandler
             if (options.AzureContainerInstances)
             {
                 await DeleteAzureContainerInstancesAsync(sub, possibleNames, cancellationToken);
+            }
+
+            if (options.AzurePostgreSql)
+            {
+                await DeleteAzurePostgreSqlAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzureSql)
@@ -305,6 +311,46 @@ internal class AzdoEventHandler
             }
         }
     }
+    protected virtual async Task DeleteAzurePostgreSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var servers = sub.GetPostgreSqlServersAsync(cancellationToken: cancellationToken);
+        await foreach (var server in servers)
+        {
+            // delete matching servers
+            var name = server.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                // delete databases in the server
+                logger.LogInformation("Deleting databases for PostgreSQL Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                var serverDatabases = server.GetPostgreSqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+                await foreach (var database in serverDatabases)
+                {
+                    var databaseName = database.Data.Name;
+                    if (databaseName.Equals("master")) continue;
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+
+                // delete the actual server
+                logger.LogInformation("Deleting PostgreSQL Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                continue; // nothing more for the server
+            }
+
+            // delete matching databases
+            var databases = server.GetPostgreSqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var database in databases)
+            {
+                var databaseName = database.Data.Name;
+                if (databaseName.Equals("master")) continue;
+                if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+            }
+        }
+    }
     protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var servers = sub.GetSqlServersAsync(cancellationToken: cancellationToken);
@@ -459,5 +505,6 @@ public class AzureDevOpsEventHandlerOptions
     public bool AzureStaticWebApps { get; set; } = true;
     public bool AzureContainerApps { get; set; } = true;
     public bool AzureContainerInstances { get; set; } = true;
+    public bool AzurePostgreSql { get; set; } = true;
     public bool AzureSql { get; set; } = true;
 }
