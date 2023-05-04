@@ -126,6 +126,7 @@ A couple of compute types are supported.
 |Azure Static WebApps|Apps and builds/environments with names ending in the possible [formats](#naming-format)|
 |Azure Container Apps|Container Apps with names ending in the possible [formats](#naming-format)|
 |Azure Container Instances|Container Groups with names ending in the possible [formats](#naming-format)|
+|Azure PostgreSQL Servers and Databases|Azure PostgreSQL servers and databases with names ending in the possible [formats](#naming-format)|
 |Azure SQL Servers, Elastic Pools, and Databases|Azure SQL servers, elastic pools and databases with names ending in the possible [formats](#naming-format)|
 
 ## Keeping updated
