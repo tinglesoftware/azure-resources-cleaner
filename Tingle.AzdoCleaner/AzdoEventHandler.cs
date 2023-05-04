@@ -7,6 +7,7 @@ using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
 using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
+using Azure.ResourceManager.MySql;
 using Azure.ResourceManager.PostgreSql;
 using Azure.ResourceManager.PostgreSql.FlexibleServers;
 using Azure.ResourceManager.Resources;
@@ -144,6 +145,11 @@ internal class AzdoEventHandler
             if (options.AzureCosmosDB)
             {
                 await DeleteAzureCosmosDBAsync(sub, possibleNames, cancellationToken);
+            }
+
+            if (options.AzureMySql)
+            {
+                await DeleteAzureMySqlAsync(sub, possibleNames, cancellationToken);
             }
 
             if (options.AzurePostgreSql)
@@ -470,6 +476,46 @@ internal class AzdoEventHandler
             }
         }
     }
+    protected virtual async Task DeleteAzureMySqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var servers = sub.GetMySqlServersAsync(cancellationToken: cancellationToken);
+        await foreach (var server in servers)
+        {
+            // delete matching servers
+            var name = server.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                // delete databases in the server
+                logger.LogInformation("Deleting databases for MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                var serverDatabases = server.GetMySqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+                await foreach (var database in serverDatabases)
+                {
+                    var databaseName = database.Data.Name;
+                    if (databaseName.Equals("master")) continue;
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+
+                // delete the actual server
+                logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                continue; // nothing more for the server
+            }
+
+            // delete matching databases
+            var databases = server.GetMySqlDatabases().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var database in databases)
+            {
+                var databaseName = database.Data.Name;
+                if (databaseName.Equals("master")) continue;
+                if (NameMatchesExpectedFormat(possibleNames, databaseName))
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
+            }
+        }
+    }
     protected virtual async Task DeleteAzurePostgreSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var servers = sub.GetPostgreSqlServersAsync(cancellationToken: cancellationToken);
@@ -705,6 +751,7 @@ public class AzureDevOpsEventHandlerOptions
     public bool AzureContainerApps { get; set; } = true;
     public bool AzureContainerInstances { get; set; } = true;
     public bool AzureCosmosDB { get; set; } = true;
+    public bool AzureMySql { get; set; } = true;
     public bool AzurePostgreSql { get; set; } = true;
     public bool AzureSql { get; set; } = true;
 }

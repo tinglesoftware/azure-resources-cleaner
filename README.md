@@ -127,6 +127,7 @@ A couple of compute types are supported.
 |Azure Container Apps|Container Apps with names ending in the possible [formats](#naming-format)|
 |Azure Container Instances|Container Groups with names ending in the possible [formats](#naming-format)|
 |Azure CosmosDB|Azure CosmosDB accounts, MongoDB databases/collection, Cassandra Keyspaces/tables, Gremlin databases/graph, and SQL databases/containers with names ending in the possible [formats](#naming-format)|
+|Azure MySQL|Azure MySQL servers and databases with names ending in the possible [formats](#naming-format)|
 |Azure PostgreSQL|Azure PostgreSQL servers (Single and Flexible) and databases with names ending in the possible [formats](#naming-format)|
 |Azure SQL|Azure SQL servers, elastic pools, and databases with names ending in the possible [formats](#naming-format)|
 
