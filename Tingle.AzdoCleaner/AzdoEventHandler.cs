@@ -163,6 +163,8 @@ internal class AzdoEventHandler
             if (options.AzureSql)
             {
                 await DeleteAzureSqlAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureSqlManagedInstancesAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureSqlManagedInstancePoolsAsync(sub, possibleNames, cancellationToken);
             }
         }
     }
@@ -688,6 +690,78 @@ internal class AzdoEventHandler
                     logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
                     await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
                 }
+            }
+        }
+    }
+    protected virtual async Task DeleteAzureSqlManagedInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var instances = sub.GetManagedInstancesAsync(cancellationToken: cancellationToken);
+        await foreach (var instance in instances)
+        {
+            await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken: cancellationToken);
+        }
+    }
+    protected virtual async Task DeleteAzureSqlManagedInstancePoolsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var pools = sub.GetInstancePoolsAsync(cancellationToken);
+        await foreach (var pool in pools)
+        {
+            // delete matching pools
+            var name = pool.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                // delete instances in the pool
+                var poolInstances = pool.GetManagedInstancesAsync(cancellationToken: cancellationToken);
+                await foreach (var instance in poolInstances)
+                {
+                    await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken);
+                }
+
+                // delete the actual server
+                logger.LogInformation("Deleting SQL Managed Instance Pool '{InstancePoolName}' at '{ResourceId}'", name, pool.Data.Id);
+                await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                continue; // nothing more for the pool
+            }
+
+            // delete matching instances
+            var instances = pool.GetManagedInstancesAsync(cancellationToken: cancellationToken);
+            await foreach (var instance in instances)
+            {
+                await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken);
+            }
+        }
+    }
+    protected virtual async Task DeleteAzureSqlManagedInstanceAsync(ManagedInstanceResource instance, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        // delete matching instances
+        var name = instance.Data.Name;
+        if (NameMatchesExpectedFormat(possibleNames, name))
+        {
+            // delete databases in the instance
+            logger.LogInformation("Deleting databases for SQL Managed Instance '{InstanceName}' at '{ResourceId}'", name, instance.Data.Id);
+            var instanceDatabases = instance.GetManagedDatabases().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var database in instanceDatabases)
+            {
+                var databaseName = database.Data.Name;
+                logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+            }
+
+            // delete the actual instance
+            logger.LogInformation("Deleting SQL Managed Instance '{InstanceName}' at '{ResourceId}'", name, instance.Data.Id);
+            await instance.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+            return; // nothing more for the instance
+        }
+
+        // delete matching databases
+        var databases = instance.GetManagedDatabases().GetAllAsync(cancellationToken: cancellationToken);
+        await foreach (var database in databases)
+        {
+            var databaseName = database.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, databaseName))
+            {
+                logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
             }
         }
     }
