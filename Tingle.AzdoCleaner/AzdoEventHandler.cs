@@ -22,7 +22,6 @@ using Microsoft.VisualStudio.Services.WebApi;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace Tingle.AzdoCleaner;
 
@@ -43,50 +42,18 @@ internal class AzdoEventHandler
         projects = this.options.Projects.Select(e => e.Split(";")).ToDictionary(s => s[0], s => s[1]);
     }
 
-    public virtual async Task HandleAsync(AzdoEvent model, CancellationToken cancellationToken = default)
+    public virtual async Task HandleAsync(int prId, string remoteUrl, string rawProjectUrl, CancellationToken cancellationToken = default)
     {
-        var type = model.EventType;
-        logger.LogInformation("Received {EventType} notification {NotificationId} on subscription {SubscriptionId}",
-                              type,
-                              model.NotificationId,
-                              model.SubscriptionId);
+        if (remoteUrl is null) throw new ArgumentNullException(nameof(remoteUrl));
+        if (rawProjectUrl is null) throw new ArgumentNullException(nameof(rawProjectUrl));
 
-
-        if (type is AzureDevOpsEventType.GitPullRequestUpdated)
+        if (!TryFindProject(rawProjectUrl, out var url, out var token)
+            && !TryFindProject(remoteUrl, out url, out token))
         {
-            var resource = JsonSerializer.Deserialize<AzureDevOpsEventPullRequestResource>(model.Resource)!;
-            var prId = resource.PullRequestId;
-            var status = resource.Status;
-
-            /*
-             * Only the PR status is considered. Adding consideration for merge status
-             * results is more combinations that may be unnecessary.
-             * For example: status = abandoned, mergeStatus = conflict
-            */
-            var targetStatuses = new[] { "completed", "abandoned", "draft", };
-            if (targetStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            {
-                var rawProjectUrl = resource.Repository?.Project?.Url ?? throw new InvalidOperationException("Project URL should not be null");
-                var remoteUrl = resource.Repository?.RemoteUrl ?? throw new InvalidOperationException("RemoteUrl should not be null");
-                if (!TryFindProject(rawProjectUrl, out var url, out var token)
-                    && !TryFindProject(remoteUrl, out url, out token))
-                {
-                    logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
-                }
-
-                await DeleteReviewAppResourcesAsync(url, token, new[] { prId, }, cancellationToken);
-            }
-            else
-            {
-                logger.LogTrace("PR {PullRequestId} was updated but the status didn't match. Status '{Status}'", prId, status);
-            }
+            logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
         }
-        else
-        {
-            logger.LogWarning("Events of type {EventType} are not supported." +
-                              " If you wish to support them you can clone the repository or contribute a PR at https://github.com/tinglesoftware/azure-devops-cleaner",
-                              type);
-        }
+
+        await DeleteReviewAppResourcesAsync(url, token, new[] { prId, }, cancellationToken);
     }
 
     internal virtual bool TryFindProject(string rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)

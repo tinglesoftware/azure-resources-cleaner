@@ -105,9 +105,9 @@ public class AzdoEventHandlerTests
         var logger = new LoggerFactory().CreateLogger<AzdoEventHandler>();
         var handler = new ModifiedAzdoEventHandler(cache, optionsAccessor, logger);
 
-        var stream = TestSamples.AzureDevOps.GetPullRequestUpdated();
-        var payload = await JsonSerializer.DeserializeAsync<AzdoEvent>(stream);
-        await handler.HandleAsync(payload!);
+        await handler.HandleAsync(prId: 1,
+                                  remoteUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam",
+                                  rawProjectUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c");
         var (url, token, prIds) = Assert.Single(handler.Calls);
         Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection", url);
         Assert.Equal("123456789", token);
