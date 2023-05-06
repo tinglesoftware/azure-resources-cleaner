@@ -39,7 +39,7 @@ param maxReplicas int = 1
 
 var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
 var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
-var providedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
+var hasProvidedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
 
 /* Managed Identity */
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -48,7 +48,7 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
 }
 
 /* Container App Environment */
-resource appEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = if (!providedAppEnvironment) {
+resource appEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = if (!hasProvidedAppEnvironment) {
   name: name
   location: location
   properties: {}
@@ -69,7 +69,7 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
   name: name
   location: location
   properties: {
-    managedEnvironmentId: providedAppEnvironment ? appEnvironmentId : appEnvironment.id
+    managedEnvironmentId: hasProvidedAppEnvironment ? appEnvironmentId : appEnvironment.id
     configuration: {
       ingress: {
         external: true

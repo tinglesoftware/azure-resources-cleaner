@@ -55,6 +55,13 @@
         "description": "Token for accessing the project."
       }
     },
+    "appEnvironmentId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource identifier of the ContainerApp Environment to deply to. If none is provided, a new one is created."
+      }
+    },
     "minReplicas": {
       "type": "int",
       "defaultValue": 0,
@@ -75,7 +82,9 @@
     }
   },
   "variables": {
-    "hasDockerImageRegistry": "[and(not(equals(parameters('dockerImageRegistry'), null())), not(empty(parameters('dockerImageRegistry'))))]"
+    "hasDockerImageRegistry": "[and(not(equals(parameters('dockerImageRegistry'), null())), not(empty(parameters('dockerImageRegistry'))))]",
+    "isAcrServer": "[and(variables('hasDockerImageRegistry'), endsWith(parameters('dockerImageRegistry'), environment().suffixes.acrLoginServer))]",
+    "hasProvidedAppEnvironment": "[and(not(equals(parameters('appEnvironmentId'), null())), not(empty(parameters('appEnvironmentId'))))]"
   },
   "resources": [
     {
@@ -85,6 +94,7 @@
       "location": "[parameters('location')]"
     },
     {
+      "condition": "[not(variables('hasProvidedAppEnvironment'))]",
       "type": "Microsoft.App/managedEnvironments",
       "apiVersion": "2022-03-01",
       "name": "[parameters('name')]",
@@ -107,7 +117,7 @@
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
       "properties": {
-        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]",
+        "managedEnvironmentId": "[if(variables('hasProvidedAppEnvironment'), parameters('appEnvironmentId'), resourceId('Microsoft.App/managedEnvironments', parameters('name')))]",
         "configuration": {
           "ingress": {
             "external": true,
@@ -119,7 +129,7 @@
               }
             ]
           },
-          "registries": "[if(variables('hasDockerImageRegistry'), createArray(createObject('identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'server', parameters('dockerImageRegistry'))), createArray())]",
+          "registries": "[if(variables('isAcrServer'), createArray(createObject('identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'server', parameters('dockerImageRegistry'))), createArray())]",
           "secrets": [
             {
               "name": "connection-strings-application-insights",
