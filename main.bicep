@@ -24,6 +24,9 @@ param azureDevOpsProjectUrl string
 @description('Token for accessing the project.')
 param azureDevOpsProjectToken string
 
+@description('Resource identifier of the ContainerApp Environment to deply to. If none is provided, a new one is created.')
+param appEnvironmentId string = ''
+
 @minValue(0)
 @maxValue(2)
 @description('The minimum number of replicas')
@@ -36,6 +39,7 @@ param maxReplicas int = 1
 
 var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
 var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
+var providedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
 
 /* Managed Identity */
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
@@ -44,7 +48,7 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
 }
 
 /* Container App Environment */
-resource appEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = {
+resource appEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = if (!providedAppEnvironment) {
   name: name
   location: location
   properties: {}
@@ -65,7 +69,7 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
   name: name
   location: location
   properties: {
-    managedEnvironmentId: appEnvironment.id
+    managedEnvironmentId: providedAppEnvironment ? appEnvironmentId : appEnvironment.id
     configuration: {
       ingress: {
         external: true
@@ -102,7 +106,7 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
             { name: 'Handler__Projects__0', secretRef: 'project-and-token-0' }
             { name: 'Handler__AzureWebsites', value: 'false' }
           ]
-          resources: { // these are the least resources we can provision
+          resources: {// these are the least resources we can provision
             cpu: json('0.25')
             memory: '0.5Gi'
           }
@@ -117,7 +121,7 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
-      '${managedIdentity.id}': { /*ttk bug*/}
+      '${managedIdentity.id}': {/*ttk bug*/ }
     }
   }
 }
