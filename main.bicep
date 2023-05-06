@@ -24,6 +24,14 @@ param azureDevOpsProjectUrl string
 @description('Token for accessing the project.')
 param azureDevOpsProjectToken string
 
+@allowed([
+  'InMemory'
+  'ServiceBus'
+  'QueueStorage'
+])
+@description('Merge strategy to use when setting auto complete on created pull requests.')
+param eventBusTransport string = 'ServiceBus'
+
 @description('Resource identifier of the ContainerApp Environment to deply to. If none is provided, a new one is created.')
 param appEnvironmentId string = ''
 
@@ -40,11 +48,43 @@ param maxReplicas int = 1
 var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
 var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
 var hasProvidedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
+// avoid conflicts across multiple deployments for resources that generate FQDN based on the name
+var collisionSuffix = uniqueString(resourceGroup().id) // e.g. zecnx476et7xm (13 characters)
 
 /* Managed Identity */
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-11-30' = {
   name: name
   location: location
+}
+
+/* Service Bus namespace and Storage Account */
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (eventBusTransport == 'ServiceBus') {
+  name: '${name}-${collisionSuffix}'
+  location: location
+  properties: {
+    disableLocalAuth: false
+    zoneRedundant: false
+  }
+  sku: {
+    name: 'Basic'
+  }
+}
+resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = if (eventBusTransport == 'QueueStorage') {
+  name: '${name}-${collisionSuffix}'
+  location: location
+  kind: 'StorageV2'
+  sku: {
+    name: 'Standard_LRS'
+  }
+  properties: {
+    accessTier: 'Hot'
+    supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: true // CDN does not work without this
+    networkAcls: {
+      bypass: 'AzureServices'
+      defaultAction: 'Allow'
+    }
+  }
 }
 
 /* Container App Environment */
@@ -101,10 +141,23 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
           env: [
             { name: 'AZURE_CLIENT_ID', value: managedIdentity.properties.clientId } // Specifies the User-Assigned Managed Identity to use. Without this, the app attempt to use the system assigned one.
             { name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED', value: 'true' }
+
             { name: 'ApplicationInsights__ConnectionString', secretRef: 'connection-strings-application-insights' }
             { name: 'Authentication__ServiceHooks__Credentials__vsts', secretRef: 'notifications-password' }
+
             { name: 'Handler__Projects__0', secretRef: 'project-and-token-0' }
             { name: 'Handler__AzureWebsites', value: 'false' }
+
+            { name: 'EventBus__SelectedTransport', value: eventBusTransport }
+            {
+              name: 'EventBus__Transports__azure-service-bus__FullyQualifiedNamespace'
+              // manipulating https://{your-namespace}.servicebus.windows.net:443/
+              value: eventBusTransport == 'ServiceBus' ? split(split(serviceBusNamespace.properties.serviceBusEndpoint, '/')[2], ':')[0] : ''
+            }
+            {
+              name: 'EventBus__Transports__azure-queue-storage__ServiceUrl'
+              value: eventBusTransport == 'QueueStorage' ? storageAccount.properties.primaryEndpoints.queue : ''
+            }
           ]
           resources: {// these are the least resources we can provision
             cpu: json('0.25')
@@ -123,6 +176,26 @@ resource app 'Microsoft.App/containerApps@2022-03-01' = {
     userAssignedIdentities: {
       '${managedIdentity.id}': {/*ttk bug*/ }
     }
+  }
+}
+
+/* Role Assignments */
+resource serviceBusDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (eventBusTransport == 'ServiceBus') {
+  name: guid(managedIdentity.id, 'AzureServiceBusDataOwner')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '090c5cfd-751d-490a-894a-3ce6f1109419')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+resource storageQueueDataContributorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (eventBusTransport == 'QueueStorage') {
+  name: guid(managedIdentity.id, 'StorageQueueDataContributor')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
 
