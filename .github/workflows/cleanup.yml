@@ -1,0 +1,19 @@
+name: Cleanup
+
+on:
+  workflow_dispatch:
+  schedule:
+  - cron: '0 0 * * 1'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Delete old packages
+      uses: actions/delete-package-versions@v4
+      with:
+        package-name: 'azure-devops-cleaner'
+        package-type: 'container'
+        min-versions-to-keep: 20
+        delete-only-pre-release-versions: "true"
