@@ -272,6 +272,19 @@ internal class AzdoEventHandler
             }
         }
 
+        // delete matching container app jobs (either the name or the environment indicates a reviewapp)
+        var jobs = sub.GetContainerAppJobsAsync(cancellationToken);
+        await foreach (var job in jobs)
+        {
+            var name = job.Data.Name;
+            var envName = new Azure.Core.ResourceIdentifier(job.Data.EnvironmentId).Name;
+            if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, envName))
+            {
+                logger.LogInformation("Deleting job '{ContainerAppJobName}' in Environment '{ResourceId}'", name, job.Data.EnvironmentId);
+                await job.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+            }
+        }
+
         // delete matching environments
         var envs = sub.GetContainerAppManagedEnvironmentsAsync(cancellationToken);
         await foreach (var env in envs)
