@@ -118,7 +118,7 @@
   "resources": [
     {
       "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
-      "apiVersion": "2018-11-30",
+      "apiVersion": "2023-01-31",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]"
     },
@@ -159,7 +159,7 @@
     {
       "condition": "[not(variables('hasProvidedAppEnvironment'))]",
       "type": "Microsoft.App/managedEnvironments",
-      "apiVersion": "2022-03-01",
+      "apiVersion": "2022-10-01",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
       "properties": {}
@@ -176,7 +176,7 @@
     },
     {
       "type": "Microsoft.App/containerApps",
-      "apiVersion": "2022-03-01",
+      "apiVersion": "2022-10-01",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
       "properties": {
@@ -216,7 +216,7 @@
               "env": [
                 {
                   "name": "AZURE_CLIENT_ID",
-                  "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2018-11-30').clientId]"
+                  "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
                 },
                 {
                   "name": "ASPNETCORE_FORWARDEDHEADERS_ENABLED",
@@ -248,7 +248,7 @@
                 },
                 {
                   "name": "EventBus__Transports__azure-queue-storage__ServiceUrl",
-                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), if(variables('hasProvidedStorageAccount'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2021-09-01').primaryEndpoints.queue, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2022-09-01').primaryEndpoints.queue), '')]"
+                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), if(variables('hasProvidedStorageAccount'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2022-09-01').primaryEndpoints.queue, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2022-09-01').primaryEndpoints.queue), '')]"
                 }
               ],
               "resources": {
@@ -300,7 +300,7 @@
       "name": "[guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'AzureServiceBusDataOwner')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '090c5cfd-751d-490a-894a-3ce6f1109419')]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2018-11-30').principalId]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal"
       },
       "dependsOn": [
@@ -314,7 +314,7 @@
       "name": "[guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'StorageQueueDataContributor')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '974c5e8b-45b9-4653-ba55-5f855dd0fb88')]",
-        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2018-11-30').principalId]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]",
         "principalType": "ServicePrincipal"
       },
       "dependsOn": [
@@ -329,11 +329,11 @@
     },
     "fqdn": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn]"
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-10-01').configuration.ingress.fqdn]"
     },
     "notificationUrl": {
       "type": "string",
-      "value": "[format('https://{0}/webhooks/azure', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-03-01').configuration.ingress.fqdn)]"
+      "value": "[format('https://{0}/webhooks/azure', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-10-01').configuration.ingress.fqdn)]"
     }
   }
 }
