@@ -1,16 +1,12 @@
-﻿using Tingle.Extensions.Processing;
-
-namespace Tingle.AzdoCleaner.Tests;
+﻿namespace Tingle.AzdoCleaner.Tests;
 
 internal class TestSamples
 {
-    private const string FolderNameSamples = "Samples";
-
     public static class AzureDevOps
     {
-        private static Stream GetAsStream(string fileName)
-            => EmbeddedResourceHelper.GetResourceAsStream<TestSamples>(FolderNameSamples, fileName)!;
+        public static Stream GetResourceAsStream(string resourceName) 
+            => typeof(TestSamples).Assembly.GetManifestResourceStream($"{typeof(TestSamples).Namespace}.Samples.{resourceName}")!;
 
-        public static Stream GetPullRequestUpdated() => GetAsStream("git.pullrequest.updated.json");
+        public static Stream GetPullRequestUpdated() => GetResourceAsStream("git.pullrequest.updated.json");
     }
 }
