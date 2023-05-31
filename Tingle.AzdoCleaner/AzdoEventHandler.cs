@@ -7,6 +7,7 @@ using Azure.ResourceManager.ContainerService;
 using Azure.ResourceManager.ContainerService.Models;
 using Azure.ResourceManager.CosmosDB;
 using Azure.ResourceManager.CosmosDB.Models;
+using Azure.ResourceManager.ManagedServiceIdentities;
 using Azure.ResourceManager.MySql;
 using Azure.ResourceManager.MySql.FlexibleServers;
 using Azure.ResourceManager.PostgreSql;
@@ -132,6 +133,11 @@ internal class AzdoEventHandler
                 await DeleteAzureSqlAsync(sub, possibleNames, cancellationToken);
                 await DeleteAzureSqlManagedInstancesAsync(sub, possibleNames, cancellationToken);
                 await DeleteAzureSqlManagedInstancePoolsAsync(sub, possibleNames, cancellationToken);
+            }
+
+            if (options.UserAssignedIdentities)
+            {
+                await DeleteAzureUserAssignedIdentitiesAsync(sub, possibleNames, cancellationToken);
             }
         }
     }
@@ -745,6 +751,33 @@ internal class AzdoEventHandler
             }
         }
     }
+    protected virtual async Task DeleteAzureUserAssignedIdentitiesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    {
+        var identities = sub.GetUserAssignedIdentitiesAsync(cancellationToken);
+        await foreach (var identity in identities)
+        {
+            // delete matching identities
+            var name = identity.Data.Name;
+            if (NameMatchesExpectedFormat(possibleNames, name))
+            {
+                logger.LogInformation("Deleting UserAssigned managed identity '{IdentityName}'", name);
+                await identity.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                continue; // nothing more for the site
+            }
+
+            // delete matching federated credentials
+            var credentials = identity.GetFederatedIdentityCredentials().GetAllAsync(cancellationToken: cancellationToken);
+            await foreach (var credential in credentials)
+            {
+                var credentialsName = credential.Data.Name;
+                if (NameMatchesExpectedFormat(possibleNames, credentialsName))
+                {
+                    logger.LogInformation("Deleting federated credentials '{CredentialsName}' in UserAssigned managed identity '{ResourceId}'", credentialsName, identity.Data.Id);
+                    await credential.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
+            }
+        }
+    }
 
     protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
@@ -839,4 +872,5 @@ public class AzureDevOpsEventHandlerOptions
     public bool AzureMySql { get; set; } = true;
     public bool AzurePostgreSql { get; set; } = true;
     public bool AzureSql { get; set; } = true;
+    public bool UserAssignedIdentities { get; set; } = true;
 }

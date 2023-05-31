@@ -131,6 +131,7 @@ A couple of compute types are supported.
 |Azure PostgreSQL|Azure PostgreSQL servers (Single and Flexible) and databases with names ending in the possible [formats](#naming-format)|
 |Azure SQL|Azure SQL servers, elastic pools, and databases with names ending in the possible [formats](#naming-format)|
 |Azure SQL Managed Instances|Azure SQL Managed Instances, instance pools, and databases with names ending in the possible [formats](#naming-format)|
+|Azure User Assigned Managed Identities|Identities and federated credentials with names ending in the possible [formats](#naming-format)|
 
 ## Keeping updated
 
