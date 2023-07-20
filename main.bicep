@@ -38,6 +38,10 @@ param serviceBusNamespaceId string = ''
 @description('Resource identifier of the storage account to use. If none is provided, a new one is created.')
 param storageAccountId string = ''
 
+// Example: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/Fabrikam/providers/Microsoft.OperationalInsights/workspaces/fabrikam
+@description('Resource identifier of the LogAnalytics Workspace to use. If none is provided, a new one is created.')
+param logAnalyticsWorkspaceId string = ''
+
 @description('Resource identifier of the ContainerApp Environment to deploy to. If none is provided, a new one is created.')
 param appEnvironmentId string = ''
 
@@ -55,6 +59,7 @@ var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageR
 var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
 var hasProvidedServiceBusNamespace = (serviceBusNamespaceId != null && !empty(serviceBusNamespaceId))
 var hasProvidedStorageAccount = (storageAccountId != null && !empty(storageAccountId))
+var hasProvidedLogAnalyticsWorkspace = (logAnalyticsWorkspaceId != null && !empty(logAnalyticsWorkspaceId))
 var hasProvidedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
 // avoid conflicts across multiple deployments for resources that generate FQDN based on the name
 var collisionSuffix = uniqueString(resourceGroup().id) // e.g. zecnx476et7xm (13 characters)
@@ -115,6 +120,29 @@ resource providedStorageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' e
   scope: resourceGroup(split(storageAccountId, '/')[2], split(storageAccountId, '/')[4])
 }
 
+/* LogAnalytics */
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = if (!hasProvidedLogAnalyticsWorkspace) {
+  name: name
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    workspaceCapping: {
+      dailyQuotaGb: json('0.167') // low so as not to pass the 5GB limit per subscription
+    }
+  }
+}
+resource providedLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (hasProvidedLogAnalyticsWorkspace) {
+  // Inspired by https://github.com/Azure/bicep/issues/1722#issuecomment-952118402
+  // Example: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/Fabrikam/providers/Microsoft.OperationalInsights/workspaces/fabrikam
+  // 0 -> '', 1 -> 'subscriptions', 2 -> '00000000-0000-0000-0000-000000000000', 3 -> 'resourceGroups'
+  // 4 -> 'Fabrikam', 5 -> 'providers', 6 -> 'Microsoft.OperationalInsights' 7 -> 'workspaces'
+  // 8 -> 'fabrikam'
+  name: split(logAnalyticsWorkspaceId, '/')[8]
+  scope: resourceGroup(split(logAnalyticsWorkspaceId, '/')[2], split(logAnalyticsWorkspaceId, '/')[4])
+}
+
 /* Container App Environment */
 resource appEnvironment 'Microsoft.App/managedEnvironments@2022-10-01' = if (!hasProvidedAppEnvironment) {
   name: name
@@ -129,6 +157,7 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   kind: 'web'
   properties: {
     Application_Type: 'web'
+    WorkspaceResourceId: hasProvidedLogAnalyticsWorkspace ? providedLogAnalyticsWorkspace.id : logAnalyticsWorkspace.id
   }
 }
 

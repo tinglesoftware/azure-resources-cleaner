@@ -81,6 +81,13 @@
         "description": "Resource identifier of the storage account to use. If none is provided, a new one is created."
       }
     },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource identifier of the LogAnalytics Workspace to use. If none is provided, a new one is created."
+      }
+    },
     "appEnvironmentId": {
       "type": "string",
       "defaultValue": "",
@@ -112,6 +119,7 @@
     "isAcrServer": "[and(variables('hasDockerImageRegistry'), endsWith(parameters('dockerImageRegistry'), environment().suffixes.acrLoginServer))]",
     "hasProvidedServiceBusNamespace": "[and(not(equals(parameters('serviceBusNamespaceId'), null())), not(empty(parameters('serviceBusNamespaceId'))))]",
     "hasProvidedStorageAccount": "[and(not(equals(parameters('storageAccountId'), null())), not(empty(parameters('storageAccountId'))))]",
+    "hasProvidedLogAnalyticsWorkspace": "[and(not(equals(parameters('logAnalyticsWorkspaceId'), null())), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
     "hasProvidedAppEnvironment": "[and(not(equals(parameters('appEnvironmentId'), null())), not(empty(parameters('appEnvironmentId'))))]",
     "collisionSuffix": "[uniqueString(resourceGroup().id)]"
   },
@@ -157,6 +165,21 @@
       }
     },
     {
+      "condition": "[not(variables('hasProvidedLogAnalyticsWorkspace'))]",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "workspaceCapping": {
+          "dailyQuotaGb": "[json('0.167')]"
+        }
+      }
+    },
+    {
       "condition": "[not(variables('hasProvidedAppEnvironment'))]",
       "type": "Microsoft.App/managedEnvironments",
       "apiVersion": "2022-10-01",
@@ -171,8 +194,12 @@
       "location": "[parameters('location')]",
       "kind": "web",
       "properties": {
-        "Application_Type": "web"
-      }
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[if(variables('hasProvidedLogAnalyticsWorkspace'), extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('logAnalyticsWorkspaceId'), '/')[2], split(parameters('logAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('logAnalyticsWorkspaceId'), '/')[8]), resourceId('Microsoft.OperationalInsights/workspaces', parameters('name')))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('name'))]"
+      ]
     },
     {
       "type": "Microsoft.App/containerApps",
