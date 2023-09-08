@@ -78,9 +78,9 @@ resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (
     disableLocalAuth: false
     zoneRedundant: false
   }
-  sku: {
-    name: 'Basic'
-  }
+  sku: { name: 'Basic' }
+
+  resource authorizationRule 'AuthorizationRules' existing = { name: 'RootManageSharedAccessKey' }
 }
 resource providedServiceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' existing = if (eventBusTransport == 'ServiceBus' && hasProvidedServiceBusNamespace) {
   // Inspired by https://github.com/Azure/bicep/issues/1722#issuecomment-952118402
@@ -90,6 +90,8 @@ resource providedServiceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01
   // 8 -> 'fabrikam'
   name: split(serviceBusNamespaceId, '/')[8]
   scope: resourceGroup(split(serviceBusNamespaceId, '/')[2], split(serviceBusNamespaceId, '/')[4])
+
+  resource authorizationRule 'AuthorizationRules' existing = { name: 'RootManageSharedAccessKey' }
 }
 
 /* Storage Account */
@@ -184,11 +186,18 @@ resource app 'Microsoft.App/containerApps@2022-10-01' = {
           server: dockerImageRegistry
         }
       ] : []
-      secrets: [
-        { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
-        { name: 'notifications-password', value: notificationsPassword }
-        { name: 'project-and-token-0', value: '${azureDevOpsProjectUrl};${azureDevOpsProjectToken}' }
-      ]
+      secrets: concat(
+        [
+          { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
+          { name: 'notifications-password', value: notificationsPassword }
+          { name: 'project-and-token-0', value: '${azureDevOpsProjectUrl};${azureDevOpsProjectToken}' }
+        ],
+        eventBusTransport == 'ServiceBus' ? [
+          {
+            name: 'connection-strings-asb-scaler'
+            value: hasProvidedServiceBusNamespace ? providedServiceBusNamespace::authorizationRule.listKeys().primaryConnectionString : serviceBusNamespace::authorizationRule.listKeys().primaryConnectionString
+          }
+        ] : [])
     }
     template: {
       containers: [
@@ -229,6 +238,22 @@ resource app 'Microsoft.App/containerApps@2022-10-01' = {
       scale: {
         minReplicas: minReplicas
         maxReplicas: maxReplicas
+        rules: concat(
+          [ { name: 'http', http: { metadata: { concurrentRequests: '1000' } } } ],
+          eventBusTransport == 'ServiceBus' ? [
+            {
+              name: 'azure-servicebus-${name}'
+              custom: {
+                type: 'azure-servicebus'
+                metadata: {
+                  namespace: hasProvidedServiceBusNamespace ? providedServiceBusNamespace.name : serviceBusNamespace.name // Name of the Azure Service Bus namespace that contains your queue or topic.
+                  queueName: 'azdo-cleanup' // Name of the Azure Service Bus queue to scale on.
+                  messageCount: '100' // Amount of active messages in your Azure Service Bus queue or topic to scale on.
+                }
+                auth: [ { secretRef: 'connection-strings-asb-scaler', triggerParameter: 'connection' } ]
+              }
+            }
+          ] : [])
       }
     }
   }

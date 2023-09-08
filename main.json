@@ -58,14 +58,14 @@
     "eventBusTransport": {
       "type": "string",
       "defaultValue": "ServiceBus",
-      "metadata": {
-        "description": "Merge strategy to use when setting auto complete on created pull requests."
-      },
       "allowedValues": [
         "InMemory",
         "ServiceBus",
         "QueueStorage"
-      ]
+      ],
+      "metadata": {
+        "description": "Merge strategy to use when setting auto complete on created pull requests."
+      }
     },
     "serviceBusNamespaceId": {
       "type": "string",
@@ -98,20 +98,20 @@
     "minReplicas": {
       "type": "int",
       "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 2,
       "metadata": {
         "description": "The minimum number of replicas"
-      },
-      "maxValue": 2,
-      "minValue": 0
+      }
     },
     "maxReplicas": {
       "type": "int",
       "defaultValue": 1,
+      "minValue": 1,
+      "maxValue": 5,
       "metadata": {
         "description": "The maximum number of replicas"
-      },
-      "maxValue": 5,
-      "minValue": 1
+      }
     }
   },
   "variables": {
@@ -220,20 +220,7 @@
             ]
           },
           "registries": "[if(variables('isAcrServer'), createArray(createObject('identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'server', parameters('dockerImageRegistry'))), createArray())]",
-          "secrets": [
-            {
-              "name": "connection-strings-application-insights",
-              "value": "[reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString]"
-            },
-            {
-              "name": "notifications-password",
-              "value": "[parameters('notificationsPassword')]"
-            },
-            {
-              "name": "project-and-token-0",
-              "value": "[format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken'))]"
-            }
-          ]
+          "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'notifications-password', 'value', parameters('notificationsPassword')), createObject('name', 'project-and-token-0', 'value', format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', if(variables('hasProvidedServiceBusNamespace'), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('serviceBusNamespaceId'), '/')[2], split(parameters('serviceBusNamespaceId'), '/')[4]), 'Microsoft.ServiceBus/namespaces/AuthorizationRules', split(parameters('serviceBusNamespaceId'), '/')[8], 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString, listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString))), createArray()))]"
         },
         "template": {
           "containers": [
@@ -302,7 +289,8 @@
           ],
           "scale": {
             "minReplicas": "[parameters('minReplicas')]",
-            "maxReplicas": "[parameters('maxReplicas')]"
+            "maxReplicas": "[parameters('maxReplicas')]",
+            "rules": "[concat(createArray(createObject('name', 'http', 'http', createObject('metadata', createObject('concurrentRequests', '1000')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', format('azure-servicebus-{0}', parameters('name')), 'custom', createObject('type', 'azure-servicebus', 'metadata', createObject('namespace', if(variables('hasProvidedServiceBusNamespace'), split(parameters('serviceBusNamespaceId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), 'queueName', 'azdo-cleanup', 'messageCount', '100'), 'auth', createArray(createObject('secretRef', 'connection-strings-asb-scaler', 'triggerParameter', 'connection'))))), createArray()))]"
           }
         }
       },
