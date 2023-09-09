@@ -212,7 +212,6 @@ resource app 'Microsoft.App/containerApps@2022-10-01' = {
             { name: 'Authentication__ServiceHooks__Credentials__vsts', secretRef: 'notifications-password' }
 
             { name: 'Handler__Projects__0', secretRef: 'project-and-token-0' }
-            { name: 'Handler__AzureWebsites', value: 'false' }
 
             { name: 'EventBus__SelectedTransport', value: eventBusTransport }
             {
