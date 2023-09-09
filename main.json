@@ -249,10 +249,6 @@
                   "secretRef": "project-and-token-0"
                 },
                 {
-                  "name": "Handler__AzureWebsites",
-                  "value": "false"
-                },
-                {
                   "name": "EventBus__SelectedTransport",
                   "value": "[parameters('eventBusTransport')]"
                 },
