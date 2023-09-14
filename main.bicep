@@ -241,7 +241,7 @@ resource app 'Microsoft.App/containerApps@2022-10-01' = {
           [ { name: 'http', http: { metadata: { concurrentRequests: '1000' } } } ],
           eventBusTransport == 'ServiceBus' ? [
             {
-              name: 'azure-servicebus-${name}'
+              name: 'azure-servicebus-azdo-cleanup'
               custom: {
                 type: 'azure-servicebus'
                 metadata: {
