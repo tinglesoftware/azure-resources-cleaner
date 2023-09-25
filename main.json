@@ -147,7 +147,7 @@
     {
       "condition": "[and(equals(parameters('eventBusTransport'), 'QueueStorage'), not(variables('hasProvidedStorageAccount')))]",
       "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2022-09-01",
+      "apiVersion": "2023-01-01",
       "name": "[format('{0}-{1}', parameters('name'), variables('collisionSuffix'))]",
       "location": "[parameters('location')]",
       "kind": "StorageV2",
@@ -182,7 +182,7 @@
     {
       "condition": "[not(variables('hasProvidedAppEnvironment'))]",
       "type": "Microsoft.App/managedEnvironments",
-      "apiVersion": "2022-10-01",
+      "apiVersion": "2023-05-01",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
       "properties": {}
@@ -203,7 +203,7 @@
     },
     {
       "type": "Microsoft.App/containerApps",
-      "apiVersion": "2022-10-01",
+      "apiVersion": "2023-05-01",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
       "properties": {
@@ -258,7 +258,7 @@
                 },
                 {
                   "name": "EventBus__Transports__azure-queue-storage__ServiceUrl",
-                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), if(variables('hasProvidedStorageAccount'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2022-09-01').primaryEndpoints.queue, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2022-09-01').primaryEndpoints.queue), '')]"
+                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), if(variables('hasProvidedStorageAccount'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2023-01-01').primaryEndpoints.queue, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').primaryEndpoints.queue), '')]"
                 }
               ],
               "resources": {
@@ -286,7 +286,7 @@
           "scale": {
             "minReplicas": "[parameters('minReplicas')]",
             "maxReplicas": "[parameters('maxReplicas')]",
-            "rules": "[concat(createArray(createObject('name', 'http', 'http', createObject('metadata', createObject('concurrentRequests', '1000')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', format('azure-servicebus-{0}', parameters('name')), 'custom', createObject('type', 'azure-servicebus', 'metadata', createObject('namespace', if(variables('hasProvidedServiceBusNamespace'), split(parameters('serviceBusNamespaceId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), 'queueName', 'azdo-cleanup', 'messageCount', '100'), 'auth', createArray(createObject('secretRef', 'connection-strings-asb-scaler', 'triggerParameter', 'connection'))))), createArray()))]"
+            "rules": "[concat(createArray(createObject('name', 'http', 'http', createObject('metadata', createObject('concurrentRequests', '1000')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'azure-servicebus-azdo-cleanup', 'custom', createObject('type', 'azure-servicebus', 'metadata', createObject('namespace', if(variables('hasProvidedServiceBusNamespace'), split(parameters('serviceBusNamespaceId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), 'queueName', 'azdo-cleanup', 'messageCount', '100'), 'auth', createArray(createObject('secretRef', 'connection-strings-asb-scaler', 'triggerParameter', 'connection'))))), createArray()))]"
           }
         }
       },
@@ -340,11 +340,11 @@
     },
     "fqdn": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-10-01').configuration.ingress.fqdn]"
+      "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2023-05-01').configuration.ingress.fqdn]"
     },
     "notificationUrl": {
       "type": "string",
-      "value": "[format('https://{0}/webhooks/azure', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2022-10-01').configuration.ingress.fqdn)]"
+      "value": "[format('https://{0}/webhooks/azure', reference(resourceId('Microsoft.App/containerApps', parameters('name')), '2023-05-01').configuration.ingress.fqdn)]"
     }
   }
 }
