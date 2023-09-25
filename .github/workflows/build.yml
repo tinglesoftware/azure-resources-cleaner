@@ -74,7 +74,7 @@ jobs:
     - name: Build image
       run: |
         docker build \
-        -f Tingle.AzdoCleaner/Dockerfile.CI \
+        -f Tingle.AzdoCleaner/Dockerfile \
         --label com.github.image.run.id=$GITHUB_RUN_ID \
         --label com.github.image.run.number=$GITHUB_RUN_NUMBER \
         --label com.github.image.job.id=$GITHUB_JOB \
@@ -87,7 +87,7 @@ jobs:
         -t "ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:$GITVERSION_MAJOR" \
         --cache-from ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest \
         --build-arg BUILDKIT_INLINE_CACHE=1 \
-        $GITHUB_WORKSPACE/drop/Tingle.AzdoCleaner
+        .
 
     - name: Log into registry
       if: ${{ (github.ref == 'refs/heads/main') || (!startsWith(github.ref, 'refs/pull')) || startsWith(github.ref, 'refs/tags') }}

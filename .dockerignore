@@ -1,7 +1,8 @@
 **/.classpath
 **/.dockerignore
 **/.env
-**/.git
+# we need git to get proper version details during build
+# **/.git
 **/.gitignore
 **/.project
 **/.settings
