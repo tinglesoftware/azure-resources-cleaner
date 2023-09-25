@@ -5,6 +5,9 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
+LABEL org.opencontainers.image.description="Cleanup tool for Azure resources based on Azure DevOps PRs" \
+      org.opencontainers.image.source="https://github.com/tinglesoftware/azure-devops-cleaner.git"
+
 FROM mcr.microsoft.com/dotnet/sdk:7.0-bullseye-slim AS build
 WORKDIR /src
 COPY ["Tingle.AzdoCleaner/Tingle.AzdoCleaner.csproj", "Tingle.AzdoCleaner/"]

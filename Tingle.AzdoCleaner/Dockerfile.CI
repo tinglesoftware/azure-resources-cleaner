@@ -2,5 +2,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:7.0-bullseye-slim AS base
 EXPOSE 80
 EXPOSE 443
 WORKDIR /app
+
+LABEL org.opencontainers.image.description="Cleanup tool for Azure resources based on Azure DevOps PRs" \
+      org.opencontainers.image.source="https://github.com/tinglesoftware/azure-devops-cleaner.git"
+
 COPY . .
 ENTRYPOINT ["dotnet", "Tingle.AzdoCleaner.dll"]
