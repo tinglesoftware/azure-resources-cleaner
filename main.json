@@ -157,7 +157,6 @@
       "properties": {
         "accessTier": "Hot",
         "supportsHttpsTrafficOnly": true,
-        "allowBlobPublicAccess": true,
         "networkAcls": {
           "bypass": "AzureServices",
           "defaultAction": "Allow"
@@ -174,6 +173,7 @@
         "sku": {
           "name": "PerGB2018"
         },
+        "retentionInDays": 30,
         "workspaceCapping": {
           "dailyQuotaGb": "[json('0.167')]"
         }

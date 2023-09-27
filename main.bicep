@@ -74,10 +74,7 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
 resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (eventBusTransport == 'ServiceBus' && !hasProvidedServiceBusNamespace) {
   name: '${name}-${collisionSuffix}'
   location: location
-  properties: {
-    disableLocalAuth: false
-    zoneRedundant: false
-  }
+  properties: { disableLocalAuth: false, zoneRedundant: false }
   sku: { name: 'Basic' }
 
   resource authorizationRule 'AuthorizationRules' existing = { name: 'RootManageSharedAccessKey' }
@@ -99,17 +96,11 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = if (eve
   name: '${name}-${collisionSuffix}'
   location: location
   kind: 'StorageV2'
-  sku: {
-    name: 'Standard_LRS'
-  }
+  sku: { name: 'Standard_LRS' }
   properties: {
     accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
-    allowBlobPublicAccess: true // CDN does not work without this
-    networkAcls: {
-      bypass: 'AzureServices'
-      defaultAction: 'Allow'
-    }
+    networkAcls: { bypass: 'AzureServices', defaultAction: 'Allow' }
   }
 }
 resource providedStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (eventBusTransport == 'QueueStorage' && hasProvidedStorageAccount) {
@@ -127,12 +118,9 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
   name: name
   location: location
   properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    workspaceCapping: {
-      dailyQuotaGb: json('0.167') // low so as not to pass the 5GB limit per subscription
-    }
+    sku: { name: 'PerGB2018' }
+    retentionInDays: 30
+    workspaceCapping: { dailyQuotaGb: json('0.167') } // low so as not to pass the 5GB limit per subscription
   }
 }
 resource providedLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' existing = if (hasProvidedLogAnalyticsWorkspace) {
@@ -170,22 +158,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
   properties: {
     managedEnvironmentId: hasProvidedAppEnvironment ? appEnvironmentId : appEnvironment.id
     configuration: {
-      ingress: {
-        external: true
-        targetPort: 80
-        traffic: [
-          {
-            latestRevision: true
-            weight: 100
-          }
-        ]
-      }
-      registries: isAcrServer ? [
-        {
-          identity: managedIdentity.id
-          server: dockerImageRegistry
-        }
-      ] : []
+      ingress: { external: true, targetPort: 80, traffic: [ { latestRevision: true, weight: 100 } ] }
+      registries: isAcrServer ? [ { identity: managedIdentity.id, server: dockerImageRegistry } ] : []
       secrets: concat(
         [
           { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
@@ -224,10 +198,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
               value: eventBusTransport == 'QueueStorage' ? (hasProvidedStorageAccount ? providedStorageAccount.properties.primaryEndpoints.queue : storageAccount.properties.primaryEndpoints.queue) : ''
             }
           ]
-          resources: {// these are the least resources we can provision
-            cpu: json('0.25')
-            memory: '0.5Gi'
-          }
+          resources: { cpu: json('0.25'), memory: '0.5Gi' } // these are the least resources we can provision
           probes: [
             { type: 'Liveness', httpGet: { port: 80, path: '/liveness' } }
             { type: 'Readiness', httpGet: { port: 80, path: '/health' } }
