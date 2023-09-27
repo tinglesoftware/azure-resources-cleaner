@@ -151,6 +151,18 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             name: 'connection-strings-asb-scaler'
             value: hasProvidedServiceBusNamespace ? providedServiceBusNamespace::authorizationRule.listKeys().primaryConnectionString : serviceBusNamespace::authorizationRule.listKeys().primaryConnectionString
           }
+        ] : [],
+        eventBusTransport == 'QueueStorage' ? [
+          {
+            name: 'connection-strings-storage-scaler'
+            //'DefaultEndpointsProtocol=https;AccountName=<name>;EndpointSuffix=<suffix>;AccountKey=<key>'
+            value: join([
+                'DefaultEndpointsProtocol=https'
+                'AccountName=${hasProvidedStorageAccount ? providedStorageAccount.name : storageAccount.name}'
+                'AccountKey=${hasProvidedStorageAccount ? providedStorageAccount.listKeys().keys[0].value : storageAccount.listKeys().keys[0].value}'
+                'EndpointSuffix=${environment().suffixes.storage}'
+              ], ';')
+          }
         ] : [])
     }
     template: {
@@ -188,22 +200,26 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
       scale: {
         minReplicas: 0
         maxReplicas: 2
-        rules: concat(
-          [ { name: 'http', http: { metadata: { concurrentRequests: '1000' } } } ],
-          eventBusTransport == 'ServiceBus' ? [
-            {
-              name: 'azure-servicebus-azdo-cleanup'
-              custom: {
-                type: 'azure-servicebus'
-                metadata: {
-                  namespace: hasProvidedServiceBusNamespace ? providedServiceBusNamespace.name : serviceBusNamespace.name // Name of the Azure Service Bus namespace that contains your queue or topic.
-                  queueName: 'azdo-cleanup' // Name of the Azure Service Bus queue to scale on.
-                  messageCount: '100' // Amount of active messages in your Azure Service Bus queue or topic to scale on.
-                }
-                auth: [ { secretRef: 'connection-strings-asb-scaler', triggerParameter: 'connection' } ]
+        rules: [
+          { name: 'http', http: { metadata: { concurrentRequests: '1000' } } }
+          {
+            name: 'cleanup-queue'
+            azureQueue: eventBusTransport == 'QueueStorage' ? {
+              queueName: 'azdo-cleanup'
+              queueLength: 100
+              auth: [ { secretRef: 'connection-strings-asb-scaler' } ]
+            } : null
+            custom: eventBusTransport == 'ServiceBus' ? {
+              type: 'azure-servicebus'
+              metadata: {
+                namespace: hasProvidedServiceBusNamespace ? providedServiceBusNamespace.name : serviceBusNamespace.name // Name of the Azure Service Bus namespace that contains your queue or topic.
+                queueName: 'azdo-cleanup' // Name of the Azure Service Bus queue to scale on.
+                messageCount: '100' // Amount of active messages in your Azure Service Bus queue or topic to scale on.
               }
-            }
-          ] : [])
+              auth: [ { secretRef: 'connection-strings-storage-scaler', triggerParameter: 'connection' } ]
+            } : null
+          }
+        ]
       }
     }
   }
