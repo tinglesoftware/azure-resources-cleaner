@@ -16,20 +16,6 @@
         "description": "Name of all resources."
       }
     },
-    "dockerImageRegistry": {
-      "type": "string",
-      "defaultValue": "ghcr.io",
-      "metadata": {
-        "description": "Registry of the docker image. E.g. \"contoso.azurecr.io\". Leave empty unless you have a private registry mirroring the official image."
-      }
-    },
-    "dockerImageRepository": {
-      "type": "string",
-      "defaultValue": "tinglesoftware/azure-devops-cleaner",
-      "metadata": {
-        "description": "Registry and repository of the docker image. Ideally, you do not need to edit this value."
-      }
-    },
     "dockerImageTag": {
       "type": "string",
       "defaultValue": "#{GITVERSION_NUGETVERSIONV2}#",
@@ -96,8 +82,6 @@
     }
   },
   "variables": {
-    "hasDockerImageRegistry": "[and(not(equals(parameters('dockerImageRegistry'), null())), not(empty(parameters('dockerImageRegistry'))))]",
-    "isAcrServer": "[and(variables('hasDockerImageRegistry'), endsWith(parameters('dockerImageRegistry'), environment().suffixes.acrLoginServer))]",
     "hasProvidedServiceBusNamespace": "[and(not(equals(parameters('serviceBusNamespaceId'), null())), not(empty(parameters('serviceBusNamespaceId'))))]",
     "hasProvidedStorageAccount": "[and(not(equals(parameters('storageAccountId'), null())), not(empty(parameters('storageAccountId'))))]",
     "hasProvidedLogAnalyticsWorkspace": "[and(not(equals(parameters('logAnalyticsWorkspaceId'), null())), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
@@ -200,13 +184,12 @@
               }
             ]
           },
-          "registries": "[if(variables('isAcrServer'), createArray(createObject('identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'server', parameters('dockerImageRegistry'))), createArray())]",
           "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'notifications-password', 'value', parameters('notificationsPassword')), createObject('name', 'project-and-token-0', 'value', format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', if(variables('hasProvidedServiceBusNamespace'), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('serviceBusNamespaceId'), '/')[2], split(parameters('serviceBusNamespaceId'), '/')[4]), 'Microsoft.ServiceBus/namespaces/AuthorizationRules', split(parameters('serviceBusNamespaceId'), '/')[8], 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString, listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString))), createArray()))]"
         },
         "template": {
           "containers": [
             {
-              "image": "[format('{0}{1}:{2}', format('{0}', if(variables('hasDockerImageRegistry'), format('{0}/', parameters('dockerImageRegistry')), '')), parameters('dockerImageRepository'), parameters('dockerImageTag'))]",
+              "image": "[format('ghcr.io/tinglesoftware/azure-devops-cleaner:{0}', parameters('dockerImageTag'))]",
               "name": "azdo-cleaner",
               "env": [
                 {

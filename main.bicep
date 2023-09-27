@@ -4,12 +4,6 @@ param location string = resourceGroup().location
 @description('Name of all resources.')
 param name string = 'azdo-cleaner'
 
-@description('Registry of the docker image. E.g. "contoso.azurecr.io". Leave empty unless you have a private registry mirroring the official image.')
-param dockerImageRegistry string = 'ghcr.io'
-
-@description('Registry and repository of the docker image. Ideally, you do not need to edit this value.')
-param dockerImageRepository string = 'tinglesoftware/azure-devops-cleaner'
-
 @description('Tag of the docker image.')
 param dockerImageTag string = '#{GITVERSION_NUGETVERSIONV2}#'
 
@@ -44,8 +38,6 @@ param logAnalyticsWorkspaceId string = ''
 @description('Resource identifier of the ContainerApp Environment to deploy to. If none is provided, a new one is created.')
 param appEnvironmentId string = ''
 
-var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
-var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
 var hasProvidedServiceBusNamespace = (serviceBusNamespaceId != null && !empty(serviceBusNamespaceId))
 var hasProvidedStorageAccount = (storageAccountId != null && !empty(storageAccountId))
 var hasProvidedLogAnalyticsWorkspace = (logAnalyticsWorkspaceId != null && !empty(logAnalyticsWorkspaceId))
@@ -148,7 +140,6 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
     managedEnvironmentId: hasProvidedAppEnvironment ? appEnvironmentId : appEnvironment.id
     configuration: {
       ingress: { external: true, targetPort: 80, traffic: [ { latestRevision: true, weight: 100 } ] }
-      registries: isAcrServer ? [ { identity: managedIdentity.id, server: dockerImageRegistry } ] : []
       secrets: concat(
         [
           { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
@@ -165,7 +156,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
     template: {
       containers: [
         {
-          image: '${'${hasDockerImageRegistry ? '${dockerImageRegistry}/' : ''}'}${dockerImageRepository}:${dockerImageTag}'
+          image: 'ghcr.io/tinglesoftware/azure-devops-cleaner:${dockerImageTag}'
           name: 'azdo-cleaner'
           env: [
             { name: 'AZURE_CLIENT_ID', value: managedIdentity.properties.clientId } // Specifies the User-Assigned Managed Identity to use. Without this, the app attempt to use the system assigned one.
