@@ -59,7 +59,6 @@
       "type": "string",
       "defaultValue": "ServiceBus",
       "allowedValues": [
-        "InMemory",
         "ServiceBus",
         "QueueStorage"
       ],

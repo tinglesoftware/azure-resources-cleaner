@@ -25,7 +25,6 @@ param azureDevOpsProjectUrl string
 param azureDevOpsProjectToken string
 
 @allowed([
-  'InMemory'
   'ServiceBus'
   'QueueStorage'
 ])
