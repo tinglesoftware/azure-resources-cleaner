@@ -45,16 +45,6 @@ param logAnalyticsWorkspaceId string = ''
 @description('Resource identifier of the ContainerApp Environment to deploy to. If none is provided, a new one is created.')
 param appEnvironmentId string = ''
 
-@minValue(0)
-@maxValue(2)
-@description('The minimum number of replicas')
-param minReplicas int = 0
-
-@minValue(1)
-@maxValue(5)
-@description('The maximum number of replicas')
-param maxReplicas int = 1
-
 var hasDockerImageRegistry = (dockerImageRegistry != null && !empty(dockerImageRegistry))
 var isAcrServer = hasDockerImageRegistry && endsWith(dockerImageRegistry, environment().suffixes.acrLoginServer)
 var hasProvidedServiceBusNamespace = (serviceBusNamespaceId != null && !empty(serviceBusNamespaceId))
@@ -206,8 +196,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
         }
       ]
       scale: {
-        minReplicas: minReplicas
-        maxReplicas: maxReplicas
+        minReplicas: 0
+        maxReplicas: 2
         rules: concat(
           [ { name: 'http', http: { metadata: { concurrentRequests: '1000' } } } ],
           eventBusTransport == 'ServiceBus' ? [

@@ -94,24 +94,6 @@
       "metadata": {
         "description": "Resource identifier of the ContainerApp Environment to deploy to. If none is provided, a new one is created."
       }
-    },
-    "minReplicas": {
-      "type": "int",
-      "defaultValue": 0,
-      "minValue": 0,
-      "maxValue": 2,
-      "metadata": {
-        "description": "The minimum number of replicas"
-      }
-    },
-    "maxReplicas": {
-      "type": "int",
-      "defaultValue": 1,
-      "minValue": 1,
-      "maxValue": 5,
-      "metadata": {
-        "description": "The maximum number of replicas"
-      }
     }
   },
   "variables": {
@@ -284,8 +266,8 @@
             }
           ],
           "scale": {
-            "minReplicas": "[parameters('minReplicas')]",
-            "maxReplicas": "[parameters('maxReplicas')]",
+            "minReplicas": 0,
+            "maxReplicas": 2,
             "rules": "[concat(createArray(createObject('name', 'http', 'http', createObject('metadata', createObject('concurrentRequests', '1000')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'azure-servicebus-azdo-cleanup', 'custom', createObject('type', 'azure-servicebus', 'metadata', createObject('namespace', if(variables('hasProvidedServiceBusNamespace'), split(parameters('serviceBusNamespaceId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), 'queueName', 'azdo-cleanup', 'messageCount', '100'), 'auth', createArray(createObject('secretRef', 'connection-strings-asb-scaler', 'triggerParameter', 'connection'))))), createArray()))]"
           }
         }
