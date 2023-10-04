@@ -9,7 +9,6 @@ on:
     paths-ignore:
     - README.md
     - LICENSE
-    - CHANGELOG.md
     - docs/**
   pull_request:
     branches:
@@ -17,7 +16,6 @@ on:
     paths-ignore:
     - README.md
     - LICENSE
-    - CHANGELOG.md
     - docs/**
 
 jobs:
