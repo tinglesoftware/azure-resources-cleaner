@@ -116,7 +116,10 @@ internal static class ApplicationExtensions
                         RemoteUrl = remoteUrl,
                         RawProjectUrl = rawProjectUrl,
                     };
-                    await publisher.PublishAsync(evt);
+                    // if the PR closes immediately after the resources are created they may not be removed
+                    // adding a delay allows the changes in the cloud provider to have propagated
+                    var delay = TimeSpan.FromMinutes(1);
+                    await publisher.PublishAsync(@event: evt, delay: delay);
                 }
                 else
                 {
