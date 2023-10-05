@@ -8,6 +8,19 @@ using Tingle.EventBus;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Serilog
+builder.Services.AddSerilog(builder =>
+{
+    builder.ConfigureSensitiveDataMasking(options =>
+    {
+        options.ExcludeProperties.AddRange(new[] {
+            "ProjectUrl",
+            "RemoteUrl",
+            "ResourceId",
+        });
+    });
+});
+
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddAuthentication()
                 .AddBasic<BasicUserValidationService>(options => options.Realm = "AzdoCleaner");

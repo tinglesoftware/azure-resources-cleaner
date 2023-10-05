@@ -37,6 +37,7 @@
     <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.19.2" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.19.2" />
     <PackageReference Include="Tingle.EventBus.Transports.InMemory" Version="0.19.2" />
+    <PackageReference Include="Tingle.Extensions.Serilog" Version="4.2.2" />
   </ItemGroup>
 
 </Project>
