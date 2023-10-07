@@ -150,7 +150,18 @@
       "apiVersion": "2023-05-01",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]",
-      "properties": {}
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[if(variables('hasProvidedLogAnalyticsWorkspace'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('logAnalyticsWorkspaceId'), '/')[2], split(parameters('logAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('logAnalyticsWorkspaceId'), '/')[8]), '2022-10-01').customerId, reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('name')), '2022-10-01').customerId)]",
+            "sharedKey": "[if(variables('hasProvidedLogAnalyticsWorkspace'), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('logAnalyticsWorkspaceId'), '/')[2], split(parameters('logAnalyticsWorkspaceId'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('logAnalyticsWorkspaceId'), '/')[8]), '2022-10-01').primarySharedKey, listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('name')), '2022-10-01').primarySharedKey)]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('name'))]"
+      ]
     },
     {
       "type": "Microsoft.Insights/components",

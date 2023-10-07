@@ -118,7 +118,15 @@ resource providedLogAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces
 resource appEnvironment 'Microsoft.App/managedEnvironments@2023-05-01' = if (!hasProvidedAppEnvironment) {
   name: name
   location: location
-  properties: {}
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: hasProvidedLogAnalyticsWorkspace ? providedLogAnalyticsWorkspace.properties.customerId : logAnalyticsWorkspace.properties.customerId
+        sharedKey: hasProvidedLogAnalyticsWorkspace ? providedLogAnalyticsWorkspace.listKeys().primarySharedKey : logAnalyticsWorkspace.listKeys().primarySharedKey
+      }
+    }
+  }
 }
 
 /* Application Insights */
