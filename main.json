@@ -257,26 +257,7 @@
                 }
               ]
             }
-          ],
-          "scale": {
-            "minReplicas": 0,
-            "maxReplicas": 2,
-            "rules": [
-              {
-                "name": "http",
-                "http": {
-                  "metadata": {
-                    "concurrentRequests": "1000"
-                  }
-                }
-              },
-              {
-                "name": "cleanup-queue",
-                "azureQueue": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), createObject('queueName', 'azdo-cleanup', 'queueLength', 100, 'auth', createArray(createObject('secretRef', 'connection-strings-asb-scaler'))), null())]",
-                "custom": "[if(equals(parameters('eventBusTransport'), 'ServiceBus'), createObject('type', 'azure-servicebus', 'metadata', createObject('namespace', if(variables('hasProvidedServiceBusNamespace'), split(parameters('serviceBusNamespaceId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), 'queueName', 'azdo-cleanup', 'messageCount', '100'), 'auth', createArray(createObject('secretRef', 'connection-strings-storage-scaler', 'triggerParameter', 'connection'))), null())]"
-              }
-            ]
-          }
+          ]
         }
       },
       "identity": {

@@ -205,30 +205,6 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           ]
         }
       ]
-      scale: {
-        minReplicas: 0
-        maxReplicas: 2
-        rules: [
-          { name: 'http', http: { metadata: { concurrentRequests: '1000' } } }
-          {
-            name: 'cleanup-queue'
-            azureQueue: eventBusTransport == 'QueueStorage' ? {
-              queueName: 'azdo-cleanup'
-              queueLength: 100
-              auth: [ { secretRef: 'connection-strings-asb-scaler' } ]
-            } : null
-            custom: eventBusTransport == 'ServiceBus' ? {
-              type: 'azure-servicebus'
-              metadata: {
-                namespace: hasProvidedServiceBusNamespace ? providedServiceBusNamespace.name : serviceBusNamespace.name // Name of the Azure Service Bus namespace that contains your queue or topic.
-                queueName: 'azdo-cleanup' // Name of the Azure Service Bus queue to scale on.
-                messageCount: '100' // Amount of active messages in your Azure Service Bus queue or topic to scale on.
-              }
-              auth: [ { secretRef: 'connection-strings-storage-scaler', triggerParameter: 'connection' } ]
-            } : null
-          }
-        ]
-      }
     }
   }
   identity: {
