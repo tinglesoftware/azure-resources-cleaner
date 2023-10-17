@@ -12,3 +12,5 @@ updates:
   groups:
     event-bus:
       patterns: ["Tingle.EventBus.*"]
+    xuint:
+      patterns: ["Xunit*"]
