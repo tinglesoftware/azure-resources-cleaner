@@ -12,5 +12,13 @@ updates:
   groups:
     event-bus:
       patterns: ["Tingle.EventBus.*"]
+    microsoft:
+      patterns: ["Microsoft.*"]
+    system:
+      patterns: ["System.*"]
+    tingle:
+      patterns:
+      - "Tingle.AspNetCore.*"
+      - "Tingle.Extensions.*"
     xuint:
       patterns: ["Xunit*"]
