@@ -147,7 +147,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
   properties: {
     managedEnvironmentId: hasProvidedAppEnvironment ? appEnvironmentId : appEnvironment.id
     configuration: {
-      ingress: { external: true, targetPort: 80, traffic: [ { latestRevision: true, weight: 100 } ] }
+      ingress: { external: true, targetPort: 8080, traffic: [ { latestRevision: true, weight: 100 } ] }
       secrets: concat(
         [
           { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
@@ -200,8 +200,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
           ]
           resources: { cpu: json('0.25'), memory: '0.5Gi' } // these are the least resources we can provision
           probes: [
-            { type: 'Liveness', httpGet: { port: 80, path: '/liveness' } }
-            { type: 'Readiness', httpGet: { port: 80, path: '/health' } }
+            { type: 'Liveness', httpGet: { port: 8080, path: '/liveness' } }
+            { type: 'Readiness', httpGet: { port: 8080, path: '/health' } }
           ]
         }
       ]
