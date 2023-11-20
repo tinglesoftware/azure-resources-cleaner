@@ -32,7 +32,7 @@ internal class AzdoEventHandler
     private readonly AzureDevOpsEventHandlerOptions options;
     private readonly ILogger logger;
 
-    private readonly IReadOnlyDictionary<string, string> projects;
+    private readonly Dictionary<string, string> projects;
 
     public AzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
     {
@@ -45,8 +45,8 @@ internal class AzdoEventHandler
 
     public virtual async Task HandleAsync(int prId, string remoteUrl, string rawProjectUrl, CancellationToken cancellationToken = default)
     {
-        if (remoteUrl is null) throw new ArgumentNullException(nameof(remoteUrl));
-        if (rawProjectUrl is null) throw new ArgumentNullException(nameof(rawProjectUrl));
+        ArgumentNullException.ThrowIfNull(remoteUrl);
+        ArgumentNullException.ThrowIfNull(rawProjectUrl);
 
         if (!TryFindProject(rawProjectUrl, out var url, out var token)
             && !TryFindProject(remoteUrl, out url, out token))
@@ -860,7 +860,7 @@ internal class AzdoEventHandler
 
 public class AzureDevOpsEventHandlerOptions
 {
-    public List<string> Projects { get; set; } = new();
+    public List<string> Projects { get; set; } = [];
 
     public bool AzureResourceGroups { get; set; } = true;
     public bool AzureKubernetes { get; set; } = true;

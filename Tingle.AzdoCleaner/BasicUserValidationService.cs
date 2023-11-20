@@ -2,15 +2,8 @@
 
 namespace Tingle.AzdoCleaner;
 
-internal class BasicUserValidationService : IBasicUserValidationService
+internal class BasicUserValidationService(IConfiguration configuration) : IBasicUserValidationService
 {
-    private readonly IConfiguration configuration;
-
-    public BasicUserValidationService(IConfiguration configuration)
-    {
-        this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-    }
-
     public Task<bool> IsValidAsync(string username, string password)
     {
         var expected = configuration.GetValue<string?>($"Authentication:ServiceHooks:Credentials:{username}");

@@ -16,15 +16,8 @@ using Xunit.Abstractions;
 
 namespace Tingle.AzdoCleaner.Tests;
 
-public class EndpointTests
+public class EndpointTests(ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper outputHelper;
-
-    public EndpointTests(ITestOutputHelper outputHelper)
-    {
-        this.outputHelper = outputHelper ?? throw new ArgumentNullException(nameof(outputHelper));
-    }
-
     [Fact]
     public async Task EndpointReturns_Unauthorized()
     {
@@ -72,7 +65,7 @@ public class EndpointTests
             var response = await client.SendAsync(request);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var body = await response.Content.ReadAsStringAsync();
-            Assert.Contains("\"type\":\"https://tools.ietf.org/html/rfc7231#section-6.5.1\"", body);
+            Assert.Contains("\"type\":\"https://tools.ietf.org/html/rfc9110#section-15.5.1\"", body);
             Assert.Contains("\"title\":\"One or more validation errors occurred.\"", body);
             Assert.Contains("\"status\":400", body);
             Assert.Contains("\"SubscriptionId\":[\"The SubscriptionId field is required.\"]", body);
@@ -180,12 +173,9 @@ public class EndpointTests
         }
     }
 
-    class ModifiedAzdoEventHandler : AzdoEventHandler
+    class ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger) : AzdoEventHandler(cache, options, logger)
     {
-        public ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
-            : base(cache, options, logger) { }
-
-        public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = new();
+        public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = [];
 
         protected override Task DeleteReviewAppResourcesAsync(AzdoProjectUrl url, string? token, IEnumerable<int> prIds, CancellationToken cancellationToken = default)
         {

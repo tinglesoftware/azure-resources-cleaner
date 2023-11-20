@@ -1,23 +1,27 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0-bullseye-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim AS base
+USER app
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+EXPOSE 8080
+EXPOSE 8081
 
 LABEL org.opencontainers.image.description="Cleanup tool for Azure resources based on Azure DevOps PRs" \
       org.opencontainers.image.source="https://github.com/tinglesoftware/azure-devops-cleaner"
 
-FROM mcr.microsoft.com/dotnet/sdk:7.0-bullseye-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+COPY ["Directory.Build.props", "."]
 COPY ["Tingle.AzdoCleaner/Tingle.AzdoCleaner.csproj", "Tingle.AzdoCleaner/"]
-RUN dotnet restore "Tingle.AzdoCleaner/Tingle.AzdoCleaner.csproj"
+RUN dotnet restore "./Tingle.AzdoCleaner/./Tingle.AzdoCleaner.csproj"
 COPY . .
 WORKDIR "/src/Tingle.AzdoCleaner"
-RUN dotnet build "Tingle.AzdoCleaner.csproj" -c Release -o /app/build
+RUN dotnet build "./Tingle.AzdoCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Tingle.AzdoCleaner.csproj" -c Release -o /app/publish /p:UseAppHost=false
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./Tingle.AzdoCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app

@@ -13,11 +13,11 @@ builder.Services.AddSerilog(builder =>
 {
     builder.ConfigureSensitiveDataMasking(options =>
     {
-        options.ExcludeProperties.AddRange(new[] {
+        options.ExcludeProperties.AddRange([
             "ProjectUrl",
             "RemoteUrl",
             "ResourceId",
-        });
+        ]);
     });
 });
 
@@ -118,7 +118,7 @@ internal static class ApplicationExtensions
                  * results is more combinations that may be unnecessary.
                  * For example: status = abandoned, mergeStatus = conflict
                 */
-                var targetStatuses = new[] { "completed", "abandoned", "draft", };
+                string[] targetStatuses = ["completed", "abandoned", "draft"];
                 if (targetStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
                 {
                     var rawProjectUrl = resource.Repository?.Project?.Url ?? throw new InvalidOperationException("Project URL should not be null");
@@ -158,15 +158,8 @@ internal class AzdoCleanupEvent
     public required string RawProjectUrl { get; init; }
 }
 
-internal class ProcessAzdoCleanupEventConsumer : IEventConsumer<AzdoCleanupEvent>
-{
-    private readonly AzdoEventHandler handler;
-
-    public ProcessAzdoCleanupEventConsumer(AzdoEventHandler handler)
-    {
-        this.handler = handler ?? throw new ArgumentNullException(nameof(handler));
-    }
-
+internal class ProcessAzdoCleanupEventConsumer(AzdoEventHandler handler) : IEventConsumer<AzdoCleanupEvent>
+{    
     public async Task ConsumeAsync(EventContext<AzdoCleanupEvent> context, CancellationToken cancellationToken)
     {
         var evt = context.Event;
