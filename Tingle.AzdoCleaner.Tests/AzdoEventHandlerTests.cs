@@ -14,11 +14,11 @@ public class AzdoEventHandlerTests
         var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
         var optionsAccessor = Options.Create(new AzureDevOpsEventHandlerOptions
         {
-            Projects = new List<string>
-            {
+            Projects =
+            [
                 "https://dev.azure.com/fabrikam/DefaultCollection;123456789",
                 "https://dev.azure.com/fabrikam/cea8cb01-dd13-4588-b27a-55fa170e4e94;987654321",
-            }
+            ],
         });
         var logger = new LoggerFactory().CreateLogger<AzdoEventHandler>();
         var handler = new AzdoEventHandler(cache, optionsAccessor, logger);
@@ -50,16 +50,16 @@ public class AzdoEventHandlerTests
     [Fact]
     public void MakePossibleNames_Works()
     {
-        Assert.Equal(new[] { "review-app-23765", "ra-23765", "ra23765", },
-            AzdoEventHandler.MakePossibleNames(new[] { 23765, }));
-        Assert.Equal(new[] { "review-app-23765", "ra-23765", "ra23765", "review-app-50", "ra-50", "ra50", },
-            AzdoEventHandler.MakePossibleNames(new[] { 23765, 50, }));
+        Assert.Equal(["review-app-23765", "ra-23765", "ra23765"],
+            AzdoEventHandler.MakePossibleNames([23765]));
+        Assert.Equal(["review-app-23765", "ra-23765", "ra23765", "review-app-50", "ra-50", "ra50"],
+            AzdoEventHandler.MakePossibleNames([23765, 50]));
     }
 
     [Fact]
     public void NameMatchesExpectedFormat_Works()
     {
-        var possibleNames = AzdoEventHandler.MakePossibleNames(new[] { 23765, });
+        var possibleNames = AzdoEventHandler.MakePossibleNames([23765]);
 
         // works for all in exact format
         var modified = possibleNames;
@@ -96,10 +96,7 @@ public class AzdoEventHandlerTests
         var cache = new MemoryCache(Options.Create(new MemoryCacheOptions()));
         var optionsAccessor = Options.Create(new AzureDevOpsEventHandlerOptions
         {
-            Projects = new List<string>
-            {
-                "https://dev.azure.com/fabrikam/DefaultCollection;123456789",
-            }
+            Projects = ["https://dev.azure.com/fabrikam/DefaultCollection;123456789"],
         });
         var logger = new LoggerFactory().CreateLogger<AzdoEventHandler>();
         var handler = new ModifiedAzdoEventHandler(cache, optionsAccessor, logger);
@@ -110,15 +107,12 @@ public class AzdoEventHandlerTests
         var (url, token, prIds) = Assert.Single(handler.Calls);
         Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection", url);
         Assert.Equal("123456789", token);
-        Assert.Equal(new[] { 1 }, prIds);
+        Assert.Equal([1], prIds);
     }
 
-    class ModifiedAzdoEventHandler : AzdoEventHandler
+    class ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger) : AzdoEventHandler(cache, options, logger)
     {
-        public ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
-            : base(cache, options, logger) { }
-
-        public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = new();
+        public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = [];
 
         protected override Task DeleteReviewAppResourcesAsync(AzdoProjectUrl url, string? token, IEnumerable<int> prIds, CancellationToken cancellationToken = default)
         {
