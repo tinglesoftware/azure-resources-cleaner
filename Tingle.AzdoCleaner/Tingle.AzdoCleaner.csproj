@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.221.0-preview" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
     <PackageReference Include="MiniValidation" Version="0.9.0" />
-    <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.20.0" />
+    <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.21.0" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.21.0" />
     <PackageReference Include="Tingle.EventBus.Transports.InMemory" Version="0.21.0" />
     <PackageReference Include="Tingle.Extensions.Serilog" Version="4.5.0" />
