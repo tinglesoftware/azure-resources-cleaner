@@ -20,5 +20,5 @@ updates:
       patterns:
       - "Tingle.AspNetCore.*"
       - "Tingle.Extensions.*"
-    xuint:
+    xunit:
       patterns: ["Xunit*"]
