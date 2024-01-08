@@ -27,7 +27,7 @@
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.221.0-preview" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.221.0-preview" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
     <PackageReference Include="MiniValidation" Version="0.9.0" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.21.0" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.21.0" />
