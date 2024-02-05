@@ -105,7 +105,7 @@ internal static class ApplicationExtensions
             logger.LogInformation("Received {EventType} notification {NotificationId} on subscription {SubscriptionId}",
                                   type,
                                   model.NotificationId,
-                                  model.SubscriptionId);
+                                  model.SubscriptionId?.Replace(Environment.NewLine, ""));
 
             if (type is AzureDevOpsEventType.GitPullRequestUpdated)
             {
