@@ -22,7 +22,7 @@
     <PackageReference Include="Azure.ResourceManager.MySql" Version="1.0.1" />
     <PackageReference Include="Azure.ResourceManager.PostgreSql" Version="1.1.1" />
     <PackageReference Include="Azure.ResourceManager.Sql" Version="1.2.0" />
-    <PackageReference Include="KubernetesClient" Version="13.0.1" />
+    <PackageReference Include="KubernetesClient" Version="13.0.11" />
     <PackageReference Include="Macross.Json.Extensions" Version="3.0.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.221.0-preview" />
