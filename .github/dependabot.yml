@@ -5,20 +5,27 @@
 
 version: 2
 updates:
-- package-ecosystem: "nuget" # See documentation for possible values
-  directory: "/" # Location of package manifests
-  schedule:
-    interval: "weekly"
-  groups:
-    event-bus:
-      patterns: ["Tingle.EventBus.*"]
-    microsoft:
-      patterns: ["Microsoft.*"]
-    system:
-      patterns: ["System.*"]
-    tingle:
-      patterns:
-      - "Tingle.AspNetCore.*"
-      - "Tingle.Extensions.*"
-    xunit:
-      patterns: ["Xunit*"]
+  - package-ecosystem: "nuget" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+      time: "02:00"
+    groups:
+      event-bus:
+        patterns: ["Tingle.EventBus.*"]
+      microsoft:
+        patterns: ["Microsoft.*"]
+      system:
+        patterns: ["System.*"]
+      tingle:
+        patterns:
+          - "Tingle.AspNetCore.*"
+          - "Tingle.Extensions.*"
+      xunit:
+        patterns: ["Xunit*"]
+  - package-ecosystem: "github-actions" # See documentation for possible values
+    directory: "/" # Location of package manifests
+    schedule:
+      interval: "weekly"
+      time: "02:00"
+    open-pull-requests-limit: 10
