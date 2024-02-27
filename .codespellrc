@@ -1,0 +1,4 @@
+[codespell]
+skip = .git
+# some modules, parts of regexes, and variable names to ignore
+ignore-words-list = aks
