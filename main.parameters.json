@@ -9,7 +9,7 @@
       "value": "#{NOTIFICATION_PASSWORD}#"
     },
     "azureDevOpsProjectUrl": {
-      "value": "https://dev.azure.com/tingle/"
+      "value": "https://dev.azure.com/tingle/Core"
     },
     "azureDevOpsProjectToken": {
       "value": "#{CLEANER_PROJECT_TOKEN}#"
