@@ -103,6 +103,13 @@ jobs:
         NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
         CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
 
+    - name: Publish deploy artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: deploy
+        name: deploy
+        retention-days: 1
+
     - name: Pull Docker base image & warm Docker cache
       run: docker pull "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
 
@@ -154,13 +161,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         draft: true
         allowUpdates: true
-
-    - name: Publish deploy artifact
-      uses: actions/upload-artifact@v4
-      with:
-        path: deploy
-        name: deploy
-        retention-days: 1
 
   Deploy:
     runs-on: ubuntu-latest
