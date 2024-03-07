@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "dockerImageTag": {
-      "value": "#{GITVERSION_SHORTSHA}#"
+      "value": "#{DOCKER_IMAGE_TAG}#"
     },
     "notificationsPassword": {
-      "value": "#{NotificationPassword}#"
+      "value": "#{NOTIFICATION_PASSWORD}#"
     },
     "azureDevOpsProjectUrl": {
-      "value": "#{System_TeamFoundationCollectionUri}##{System_TeamProject}#"
+      "value": "https://dev.azure.com/tingle/"
     },
     "azureDevOpsProjectToken": {
-      "value": "#{CleanerProjectToken}#"
+      "value": "#{CLEANER_PROJECT_TOKEN}#"
     }
   }
 }

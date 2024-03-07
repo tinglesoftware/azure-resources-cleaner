@@ -5,7 +5,7 @@ param location string = resourceGroup().location
 param name string = 'azdo-cleaner'
 
 @description('Tag of the docker image.')
-param dockerImageTag string = '#{GITVERSION_NUGETVERSIONV2}#'
+param dockerImageTag string = '#{DOCKER_IMAGE_TAG}#'
 
 @secure()
 @description('Notifications password.')

@@ -18,7 +18,7 @@
     },
     "dockerImageTag": {
       "type": "string",
-      "defaultValue": "#{GITVERSION_NUGETVERSIONV2}#",
+      "defaultValue": "#{DOCKER_IMAGE_TAG}#",
       "metadata": {
         "description": "Tag of the docker image."
       }
