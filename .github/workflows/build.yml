@@ -81,7 +81,7 @@ jobs:
           cp ${{ github.workspace }}/main.bicep ${{ github.workspace }}/drop/main.bicep && \
           az bicep build --file main.bicep --outfile ${{ github.workspace }}/drop/main.json
 
-    - name: Publish Artifact
+    - name: Upload Artifact (drop)
       uses: actions/upload-artifact@v4
       with:
         path: ${{ github.workspace }}/drop/*
@@ -103,7 +103,7 @@ jobs:
         NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
         CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
 
-    - name: Publish deploy artifact
+    - name: Upload Artifact (drop)
       uses: actions/upload-artifact@v4
       with:
         path: deploy
