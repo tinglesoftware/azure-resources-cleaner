@@ -169,7 +169,7 @@ jobs:
 
     steps:
     - name: Download Artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: deploy
         path: ${{ github.workspace }}/deploy
