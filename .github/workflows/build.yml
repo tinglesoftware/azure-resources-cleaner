@@ -75,12 +75,34 @@ jobs:
         files: '["${{ github.workspace }}/main.bicep"]'
 
     - name: Build bicep file
-      uses: azure/CLI@v1
+      uses: azure/cli@v1
       with:
         azcliversion: 2.45.0 # somehow 2.46.0 is failing
         inlineScript: |
           cp ${{ github.workspace }}/main.bicep ${{ github.workspace }}/drop/main.bicep
           az bicep build --file main.bicep --outfile ${{ github.workspace }}/drop/main.json
+
+    - name: Publish Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        path: ${{ github.workspace }}/drop/*
+        name: drop
+        retention-days: 1
+
+    - name: Create deploy folder
+      run: |
+        mkdir -p deploy
+        cp ${{ github.workspace }}/main.bicep ${{ github.workspace }}/deploy/main.bicep
+        cp ${{ github.workspace }}/main.parameters.json ${{ github.workspace }}/deploy/main.parameters.json
+
+    - name: Replace tokens in deploy folder
+      uses: cschleiden/replace-tokens@v1
+      with:
+        files: '["${{ github.workspace }}/deploy/main.parameters.json"]'
+      env:
+        DOCKER_IMAGE_TAG: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+        NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
+        CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
 
     - name: Pull Docker base image & warm Docker cache
       run: docker pull "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
@@ -123,12 +145,6 @@ jobs:
         docker push "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.major }}.${{ steps.gitversion.outputs.minor }}"
         docker push "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.major }}"
 
-    - name: Publish Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        path: ${{ github.workspace }}/drop/*
-        name: drop
-
     - name: Upload Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: ncipollo/release-action@v1
@@ -139,21 +155,6 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         draft: true
         allowUpdates: true
-
-    - name: Replace tokens in deploy folder
-      uses: cschleiden/replace-tokens@v1
-      with:
-        files: '["${{ github.workspace }}/main.parameters.json"]'
-      env:
-        DOCKER_IMAGE_TAG: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
-        NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
-        CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
-
-    - name: Create deploy folder
-      run: |
-        mkdir -p deploy
-        cp ${{ github.workspace }}/main.json deploy/main.bicep
-        cp ${{ github.workspace }}/main.parameters.json deploy/main.parameters.json
 
     - name: Publish deploy artifact
       uses: actions/upload-artifact@v4
