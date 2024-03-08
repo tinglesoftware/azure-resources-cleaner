@@ -1,6 +1,7 @@
 # Azure Resources Cleaner
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-resources-cleaner/build.yml?branch=main&style=flat-square)
+[![NuGet](https://img.shields.io/nuget/v/azure-resources-cleaner.svg)](https://www.nuget.org/packages/azure-resources-cleaner/)
+[![GitHub Workflow Status](https://github.com/tinglesoftware/azure-resources-cleaner/actions/workflows/build.yml/badge.svg)](https://github.com/tinglesoftware/azure-resources-cleaner/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/release/tinglesoftware/azure-resources-cleaner.svg?style=flat-square)](https://github.com/tinglesoftware/azure-resources-cleaner/releases/latest)
 [![license](https://img.shields.io/github/license/tinglesoftware/azure-resources-cleaner.svg?style=flat-square)](LICENSE)
 
@@ -96,22 +97,22 @@ jobs:
 [![Deploy to Azure US Gov](https://aka.ms/deploytoazuregovbutton)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ftinglesoftware%2Fazure-resources-cleaner%2Fmain%2Fmain.json)
 [![Visualize](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/visualizebutton.svg?sanitize=true)](http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Ftinglesoftware%2Fazure-resources-cleaner%2Fmain%2Fmain.json)
 
-The easiest means of deployment is to use the relevant button above. You can also use the [main.json](/main.json) or [main.bicep](/main.bicep) files. You will need an Azure subscription and a resource group to deploy to any of the Azure hosts.
+The easiest means of deployment is to use the relevant button above. You can also use the [`main.json`](/main.json) or [`main.bicep`](/main.bicep) files. You will need an Azure subscription and a resource group to deploy to any of the Azure hosts.
 
 |Parameter Name|Remarks|Required|Default|
 |--|--|--|--|
-|notificationsPassword|The password used to authenticate incoming requests from Azure DevOps|Yes|**none**|
-|azureDevOpsProjectUrl|The URL of the Azure DevOps project or collection. For example `https://dev.azure.com/fabrikam/DefaultCollection`. This URL must be accessible from the network that the deployment is done in. You can modify the deployment to be done in an private network but you are on your own there.|Yes|**none**|
-|azureDevOpsProjectToken|Personal Access Token (PAT) for accessing the Azure DevOps project. It must have `Environment (Read & Manage)` permissions.|Yes|**none**|
+|`notificationsPassword`|The password used to authenticate incoming requests from Azure DevOps|Yes|**none**|
+|`azureDevOpsProjectUrl`|The URL of the Azure DevOps project or collection. For example `https://dev.azure.com/fabrikam/DefaultCollection`. This URL must be accessible from the network that the deployment is done in. You can modify the deployment to be done in a private network, but you are on your own there.|Yes|**none**|
+|`azureDevOpsProjectToken`|Personal Access Token (PAT) for accessing the Azure DevOps project. It must have `Environment (Read & Manage)` permissions.|Yes|**none**|
 |location|Location to deploy the resources.|No|&lt;resource-group-location&gt;|
 |name|The name of all resources.|No|`azure-cleaner`|
-|dockerImageTag|The image tag to use when pulling the docker container. A tag also defines the version. You should avoid using `latest`. Example: `0.1.0`|No|&lt;version-downloaded&gt;|
+|`dockerImageTag`|The image tag to use when pulling the docker container. A tag also defines the version. You should avoid using `latest`. Example: `0.1.0`|No|&lt;version-downloaded&gt;|
 
-> The template includes a User Assigned Managed Identity, which is used when performing Azure Resource Manager operations such as deletions. After deployment, you should assign `Contributor` permissions to it where you want it to operate such as a subscription or a resource group. See [official docs](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal-managed-identity#user-assigned-managed-identity) for how to assign permissions.<br/><br/> You can also do the role assignment on a management group. The tool scans for subscriptions that it has access to before listing the resources of a given type so you need not change anything in the deployment after altering permissions.
+> The template includes a User Assigned Managed Identity, which is used when performing Azure Resource Manager operations such as deletions. After deployment, you should assign `Contributor` permissions to it where you want it to operate such as a subscription or a resource group. See [official docs](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal-managed-identity#user-assigned-managed-identity) for how to assign permissions.<br/><br/> You can also do the role assignment on a management group. The tool scans for subscriptions that it has access to before listing the resources of a given type, so you need not change anything in the deployment after altering permissions.
 
 ### Azure DevOps Service Hooks and Subscriptions
 
-To enable automatic cleanup after the status of a pull request changes, a subscription needs to be setup on Azure DevOps. Follow the [official documentation](https://learn.microsoft.com/en-us/azure/devops/service-hooks/services/webhooks?view=azure-devops) on how to setup one. The tool receives notifications via HTTP authenticated via basic authentication.
+To enable automatic cleanup after the status of a pull request changes, a subscription needs to be setup on Azure DevOps. Follow the [official documentation](https://learn.microsoft.com/en-us/azure/devops/service-hooks/services/webhooks?view=azure-devops) on how to set up one. The tool receives notifications via HTTP authenticated via basic authentication.
 
 Steps to follow:
 
@@ -119,7 +120,7 @@ Steps to follow:
 2. Select `Pull request updated` for event type and `Status changed` for Change while leaving the rest as is. Click Next.
 3. Populate the URL provided after deployment above, set the username to `vsts`, and the password to the value used in `notificationsPassword` above. Click Test to test functionality and if works, click Next.
 
-Unfortunately, the Azure CLI does not offer support for creating the subscription. Otherwise it'd have been much easier setup.
+Unfortunately, the Azure CLI does not offer support for creating the subscription. Otherwise, it'd have been much easier setup.
 
 If you use the [REST API](https://learn.microsoft.com/en-us/rest/api/azure/devops/hooks/subscriptions/create?view=azure-devops-rest-7.0) here's a sample:
 
@@ -144,7 +145,7 @@ If you use the [REST API](https://learn.microsoft.com/en-us/rest/api/azure/devop
 }
 ```
 
-> When using Azure Container Apps, the url should have the format:<br/>`https://azure-cleaner.{envrionment-unique-dentifier}.{region}.azurecontainerapps.io/webhooks/azure`<br/>For example: `https://azure-cleaner.blackplant-123456a7.westeurope.azurecontainerapps.io/webhooks/azure`
+> When using Azure Container Apps, the URL should have the format:<br/>`https://azure-cleaner.{envrionment-unique-dentifier}.{region}.azurecontainerapps.io/webhooks/azure`<br/>For example: `https://azure-cleaner.blackplant-123456a7.westeurope.azurecontainerapps.io/webhooks/azure`
 
 ## What is supported?
 
@@ -177,7 +178,7 @@ jobs:
         - reviewApp: MasterNamespace
 ```
 
-Once the pull request is merged or abandoned, the reviewApp remains deployed. This tool cleans up after you.
+Once the pull request is merged or abandoned, the `reviewApp` remains deployed. This tool cleans up after you.
 
 ### Preview deployments on Azure
 
@@ -200,9 +201,9 @@ A couple of compute types are supported.
 
 ## Keeping updated
 
-If you wish to keep your deployment updated, you can create a private repository with this one as a git submodule, configure dependabot to update it then add a new workflow that deploys to your preferred host using a manual trigger (or one of your choice).
+If you wish to keep your deployment updated, you can create a private repository with this one as a git submodule, configure Dependabot to update it then add a new workflow that deploys to your preferred host using a manual trigger (or one of your choice).
 
-You can also choose to watch the repository so as to be notified when a new release is published.
+You can also choose to watch the repository to be notified when a new release is published.
 
 ### Issues &amp; Comments
 

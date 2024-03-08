@@ -3,6 +3,8 @@
         "azdo",
         "azrc",
         "azuredevops",
-        "Kubernetes"
+        "Keyspaces",
+        "Kubernetes",
+        "vsts"
     ]
 }
