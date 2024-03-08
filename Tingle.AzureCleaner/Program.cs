@@ -59,10 +59,11 @@ else
 
                     ["Logging:LogLevel:Tingle.AzureCleaner"] = "Trace",
 
-                    //["Logging:Console:FormatterName"] = "Tingle",
-                    ["Logging:Console:FormatterOptions:SingleLine"] = "False",
-                    ["Logging:Console:FormatterOptions:IncludeCategory"] = "True",
-                    ["Logging:Console:FormatterOptions:IncludeEventId"] = "True",
+                    ["Logging:Console:FormatterName"] = "Simple",
+                    ["Logging:Console:FormatterOptions:SingleLine"] = "True",
+                    ["Logging:Console:FormatterOptions:IncludeCategory"] = "False",
+                    ["Logging:Console:FormatterOptions:IncludeEventId"] = "False",
+                    ["Logging:Console:FormatterOptions:IncludeScopes"] = "False",
                     ["Logging:Console:FormatterOptions:TimestampFormat"] = "HH:mm:ss ",
                 });
             });
