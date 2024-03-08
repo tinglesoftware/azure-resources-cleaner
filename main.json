@@ -1,6 +1,13 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.25.53.49325",
+      "templateHash": "10375665846729999136"
+    }
+  },
   "parameters": {
     "location": {
       "type": "string",
@@ -78,6 +85,26 @@
       "apiVersion": "2023-01-31",
       "name": "[parameters('name')]",
       "location": "[parameters('location')]"
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}-{1}', parameters('name'), variables('collisionSuffix'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "tenantId": "[subscription().tenantId]",
+        "sku": {
+          "name": "standard",
+          "family": "A"
+        },
+        "enabledForDeployment": true,
+        "enabledForDiskEncryption": true,
+        "enabledForTemplateDeployment": true,
+        "accessPolicies": [],
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 90
+      }
     },
     {
       "condition": "[equals(parameters('eventBusTransport'), 'ServiceBus')]",
@@ -162,6 +189,30 @@
       ]
     },
     {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'project-and-token-0')]",
+      "properties": {
+        "contentType": "text/plain",
+        "value": "[format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', format('{0}-{1}', parameters('name'), variables('collisionSuffix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[format('{0}/{1}', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'notifications-password')]",
+      "properties": {
+        "contentType": "text/plain",
+        "value": "[parameters('notificationsPassword')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', format('{0}-{1}', parameters('name'), variables('collisionSuffix')))]"
+      ]
+    },
+    {
       "type": "Microsoft.App/containerApps",
       "apiVersion": "2023-05-01",
       "name": "[parameters('name')]",
@@ -179,7 +230,7 @@
               }
             ]
           },
-          "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'notifications-password', 'value', parameters('notificationsPassword')), createObject('name', 'project-and-token-0', 'value', format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString)), createArray()), if(equals(parameters('eventBusTransport'), 'QueueStorage'), createArray(createObject('name', 'connection-strings-storage-scaler', 'value', join(createArray('DefaultEndpointsProtocol=https', format('AccountName={0}', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), format('AccountKey={0}', listKeys(resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').keys[0].value), format('EndpointSuffix={0}', environment().suffixes.storage)), ';'))), createArray()))]"
+          "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'project-and-token-0', 'keyVaultUrl', reference(resourceId('Microsoft.KeyVault/vaults/secrets', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'project-and-token-0'), '2023-07-01').secretUri, 'identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))), createObject('name', 'notifications-password', 'keyVaultUrl', reference(resourceId('Microsoft.KeyVault/vaults/secrets', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'notifications-password'), '2023-07-01').secretUri, 'identity', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString)), createArray()), if(equals(parameters('eventBusTransport'), 'QueueStorage'), createArray(createObject('name', 'connection-strings-storage-scaler', 'value', join(createArray('DefaultEndpointsProtocol=https', format('AccountName={0}', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), format('AccountKey={0}', listKeys(resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').keys[0].value), format('EndpointSuffix={0}', environment().suffixes.storage)), ';'))), createArray()))]"
         },
         "template": {
           "containers": [
@@ -254,8 +305,23 @@
         "[resourceId('Microsoft.App/managedEnvironments', parameters('name'))]",
         "[resourceId('Microsoft.Insights/components', parameters('name'))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'notifications-password')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'project-and-token-0')]",
         "[resourceId('Microsoft.ServiceBus/namespaces', format('{0}-{1}', parameters('name'), variables('collisionSuffix')))]",
         "[resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), 'KeyVaultAdministrator')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
       ]
     },
     {

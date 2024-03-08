@@ -43,6 +43,23 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
   location: location
 }
 
+/* Key Vault */
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: '${name}-${collisionSuffix}'
+  location: location
+  properties: {
+    tenantId: subscription().tenantId
+    sku: { name: 'standard', family: 'A' }
+    enabledForDeployment: true
+    enabledForDiskEncryption: true
+    enabledForTemplateDeployment: true
+    accessPolicies: []
+    enableRbacAuthorization: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 90
+  }
+}
+
 /* Service Bus namespace and Storage Account */
 // One cannot provide their own to reduce complexity in this file
 // Further, these are free tiers and should not be a cost concern
@@ -112,6 +129,18 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   }
 }
 
+/* KeyVault secrets */
+resource projectAndToken0Secret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'project-and-token-0'
+  properties: { contentType: 'text/plain', value: '${azureDevOpsProjectUrl};${azureDevOpsProjectToken}' }
+}
+resource notificationsPasswordSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'notifications-password'
+  properties: { contentType: 'text/plain', value: notificationsPassword }
+}
+
 /* Container App */
 resource app 'Microsoft.App/containerApps@2023-05-01' = {
   name: name
@@ -123,8 +152,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: concat(
         [
           { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
-          { name: 'notifications-password', value: notificationsPassword }
-          { name: 'project-and-token-0', value: '${azureDevOpsProjectUrl};${azureDevOpsProjectToken}' }
+          { name: 'project-and-token-0', keyVaultUrl: projectAndToken0Secret.properties.secretUri, identity: managedIdentity.id  }
+          { name: 'notifications-password', keyVaultUrl: notificationsPasswordSecret.properties.secretUri, identity: managedIdentity.id  }
         ],
         eventBusTransport == 'ServiceBus' ? [
           {
@@ -188,6 +217,15 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
 }
 
 /* Role Assignments */
+resource keyVaultAdministratorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(managedIdentity.id, 'KeyVaultAdministrator')
+  scope: resourceGroup()
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
 resource serviceBusDataOwnerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (eventBusTransport == 'ServiceBus') {
   name: guid(managedIdentity.id, 'AzureServiceBusDataOwner')
   scope: resourceGroup()
