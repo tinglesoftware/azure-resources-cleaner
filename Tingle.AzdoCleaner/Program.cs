@@ -31,7 +31,7 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-builder.AddNotificationsHandler();
+builder.Services.AddNotificationsHandler(builder.Configuration.GetSection("Handler"));
 
 // Add event bus
 var selectedTransport = builder.Configuration.GetValue<EventBusTransportKind?>("EventBus:SelectedTransport");
@@ -77,14 +77,8 @@ await app.RunAsync();
 
 internal enum EventBusTransportKind { InMemory, ServiceBus, QueueStorage, }
 
-internal static class ApplicationExtensions
+internal static class IServiceCollectionExtensions
 {
-    public static WebApplicationBuilder AddNotificationsHandler(this WebApplicationBuilder builder)
-    {
-        builder.Services.AddNotificationsHandler(builder.Configuration.GetSection("Handler"));
-        return builder;
-    }
-
     public static IServiceCollection AddNotificationsHandler(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMemoryCache();
@@ -93,7 +87,10 @@ internal static class ApplicationExtensions
 
         return services;
     }
+}
 
+internal static class IEndpointRouteBuilderExtensions
+{
     public static IEndpointConventionBuilder MapWebhooksAzure(this IEndpointRouteBuilder builder)
     {
         return builder.MapPost("/webhooks/azure", async (ILoggerFactory loggerFactory, IEventPublisher publisher, [FromBody] AzdoEvent model) =>

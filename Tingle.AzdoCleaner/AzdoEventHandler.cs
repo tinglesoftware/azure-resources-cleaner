@@ -54,7 +54,7 @@ internal class AzdoEventHandler
             logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
         }
 
-        await DeleteReviewAppResourcesAsync(url, token, new[] { prId, }, cancellationToken);
+        await DeleteReviewAppResourcesAsync(url, token, [prId], cancellationToken);
     }
 
     internal virtual bool TryFindProject(string rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)
