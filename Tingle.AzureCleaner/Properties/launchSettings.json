@@ -8,7 +8,8 @@
       "launchUrl": "health",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        //"CLI": "true"
+        "DOTNET_ENVIRONMENT": "Development",
+        "AS_WEB_APP": "true"
       },
       "applicationUrl": "https://localhost:44392;http://localhost:59271"
     },
@@ -18,7 +19,8 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/health",
       "environmentVariables": {
         "ASPNETCORE_HTTPS_PORTS": "8081",
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_HTTP_PORTS": "8080",
+        "AS_WEB_APP": "true"
       },
       "publishAllPorts": true,
       "useSSL": true

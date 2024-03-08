@@ -5,8 +5,9 @@ USER app
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
+ENV AS_WEB_APP true
 
-LABEL org.opencontainers.image.description="Cleanup tool for Azure resources based on Azure DevOps PRs" \
+LABEL org.opencontainers.image.description="Cleanup tool for Azure resources for reviews" \
       org.opencontainers.image.source="https://github.com/tinglesoftware/azure-resources-cleaner"
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
