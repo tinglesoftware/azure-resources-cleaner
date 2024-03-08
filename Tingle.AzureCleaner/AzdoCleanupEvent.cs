@@ -1,5 +1,4 @@
-﻿using Tingle.AzureCleaner;
-using Tingle.EventBus;
+﻿using Tingle.EventBus;
 
 namespace Tingle.AzureCleaner;
 

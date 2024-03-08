@@ -178,7 +178,7 @@ public class EndpointTests(ITestOutputHelper outputHelper)
         public List<IReadOnlyCollection<string>> DeleteAzureResourcesAsyncCalls { get; } = [];
         public List<(AzdoProjectUrl url, string? token, IReadOnlyCollection<string> possibleNames)> DeleteReviewAppsEnvironmentsAsyncCalls { get; } = [];
 
-        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken = default)
+        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, CancellationToken cancellationToken = default)
         {
             DeleteAzureResourcesAsyncCalls.Add(possibleNames);
             return Task.CompletedTask;
