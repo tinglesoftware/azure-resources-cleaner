@@ -43,7 +43,11 @@ internal class AzureCleaner
         azdoProjects = this.options.AzdoProjects.Select(e => e.Split(";")).ToDictionary(s => s[0], s => s[1]);
     }
 
-    public virtual async Task HandleAsync(int prId, string? remoteUrl = null, string? rawProjectUrl = null, CancellationToken cancellationToken = default)
+    public virtual async Task HandleAsync(int prId,
+                                          IReadOnlyCollection<string>? subscriptionIdsOrNames = null,
+                                          string? remoteUrl = null,
+                                          string? rawProjectUrl = null,
+                                          CancellationToken cancellationToken = default)
     {
         var possibleNames = MakePossibleNames([prId]);
 
@@ -60,7 +64,8 @@ internal class AzureCleaner
             }
         }
 
-        await DeleteAzureResourcesAsync(possibleNames, cancellationToken);
+        subscriptionIdsOrNames ??= options.Subscriptions;
+        await DeleteAzureResourcesAsync(possibleNames: possibleNames, subscriptionIdsOrNames: subscriptionIdsOrNames, cancellationToken: cancellationToken);
     }
 
     internal virtual bool TryFindAzdoProject(string? rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)
@@ -73,7 +78,7 @@ internal class AzureCleaner
         return azdoProjects.TryGetValue(url, out token);
     }
 
-    protected virtual async Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken = default)
+    protected virtual async Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, CancellationToken cancellationToken = default)
     {
         var credential = new DefaultAzureCredential();
         var client = new ArmClient(credential);
@@ -82,6 +87,15 @@ internal class AzureCleaner
         var subscriptions = client.GetSubscriptions().GetAllAsync(cancellationToken);
         await foreach (var sub in subscriptions)
         {
+            // if we have a list of subscriptions to check, skip the ones not in the list
+            if (subscriptionIdsOrNames.Count > 0
+                && !subscriptionIdsOrNames.Contains(sub.Data.SubscriptionId, StringComparer.OrdinalIgnoreCase)
+                && !subscriptionIdsOrNames.Contains(sub.Data.DisplayName, StringComparer.OrdinalIgnoreCase))
+            {
+                logger.LogDebug("Skipping subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
+                continue;
+            }
+
             logger.LogDebug("Searching in subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
 
             // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
@@ -866,6 +880,12 @@ internal class AzureCleaner
 public class AzureCleanerOptions
 {
     public List<string> AzdoProjects { get; set; } = [];
+
+    /// <summary>
+    /// Name or ID of subscriptions allowed.
+    /// If none are provided, all subscriptions are checked.
+    /// </summary>
+    public List<string> Subscriptions { get; set; } = [];
 
     public bool AzureResourceGroups { get; set; } = true;
     public bool AzureKubernetes { get; set; } = true;

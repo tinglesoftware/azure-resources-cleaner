@@ -36,14 +36,18 @@ else
 {
     var root = new RootCommand("Cleanup tool for Azure resources based on Azure DevOps PRs")
     {
-        new Option<int>(["-p", "--pr", "--pull-request-id"], "Identifier of the pull request.") { IsRequired = true, },
+        new Option<int>(["-p", "--pr", "--pull-request", "--pull-request-id"], "Identifier of the pull request.") { IsRequired = true, },
+        new Option<string[]>(["-s", "--subscription"], "Name or ID of subscriptions allowed. If none are provided, all subscriptions are checked."),
         new Option<string?>(["--remote", "--remote-url"], "Remote URL of the Azure DevOps repository."),
         new Option<string?>(["--project", "--project-url"], "Project URL. Overrides the remote URL when provided."),
     };
-    root.Handler = CommandHandler.Create(async (IHost host, int pullRequestId, string? remoteUrl, string? projectUrl) =>
+    root.Handler = CommandHandler.Create(async (IHost host, int pullRequestId, string[] subscription, string? remoteUrl, string? projectUrl) =>
     {
         var cleaner = host.Services.GetRequiredService<AzureCleaner>();
-        await cleaner.HandleAsync(prId: pullRequestId, remoteUrl: remoteUrl, rawProjectUrl: projectUrl);
+        await cleaner.HandleAsync(prId: pullRequestId,
+                                  subscriptionIdsOrNames: subscription,
+                                  remoteUrl: remoteUrl,
+                                  rawProjectUrl: projectUrl);
     });
 
     var clb = new CommandLineBuilder(root)
