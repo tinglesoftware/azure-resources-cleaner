@@ -16,7 +16,6 @@ jobs:
         package-name: 'azure-resources-cleaner'
         package-type: 'container'
         min-versions-to-keep: 20
-        delete-only-pre-release-versions: "true"
 
     - name: Delete old packages (nuget)
       uses: actions/delete-package-versions@v5
