@@ -25,12 +25,6 @@ param azureDevOpsProjectToken string
 @description('Merge strategy to use when setting auto complete on created pull requests.')
 param eventBusTransport string = 'ServiceBus'
 
-@description('Resource identifier of the ServiceBus namespace to use. If none is provided, a new one is created.')
-param serviceBusNamespaceId string = ''
-
-@description('Resource identifier of the storage account to use. If none is provided, a new one is created.')
-param storageAccountId string = ''
-
 // Example: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/Fabrikam/providers/Microsoft.OperationalInsights/workspaces/fabrikam
 @description('Resource identifier of the LogAnalytics Workspace to use. If none is provided, a new one is created.')
 param logAnalyticsWorkspaceId string = ''
@@ -38,8 +32,6 @@ param logAnalyticsWorkspaceId string = ''
 @description('Resource identifier of the ContainerApp Environment to deploy to. If none is provided, a new one is created.')
 param appEnvironmentId string = ''
 
-var hasProvidedServiceBusNamespace = (serviceBusNamespaceId != null && !empty(serviceBusNamespaceId))
-var hasProvidedStorageAccount = (storageAccountId != null && !empty(storageAccountId))
 var hasProvidedLogAnalyticsWorkspace = (logAnalyticsWorkspaceId != null && !empty(logAnalyticsWorkspaceId))
 var hasProvidedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
 // avoid conflicts across multiple deployments for resources that generate FQDN based on the name
@@ -51,8 +43,10 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
   location: location
 }
 
-/* Service Bus namespace */
-resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (eventBusTransport == 'ServiceBus' && !hasProvidedServiceBusNamespace) {
+/* Service Bus namespace and Storage Account */
+// One cannot provide their own to reduce complexity in this file
+// Further, these are free tiers and should not be a cost concern
+resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (eventBusTransport == 'ServiceBus') {
   name: '${name}-${collisionSuffix}'
   location: location
   properties: { disableLocalAuth: false, zoneRedundant: false }
@@ -60,21 +54,8 @@ resource serviceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' = if (
 
   resource authorizationRule 'AuthorizationRules' existing = { name: 'RootManageSharedAccessKey' }
 }
-resource providedServiceBusNamespace 'Microsoft.ServiceBus/namespaces@2021-11-01' existing = if (eventBusTransport == 'ServiceBus' && hasProvidedServiceBusNamespace) {
-  // Inspired by https://github.com/Azure/bicep/issues/1722#issuecomment-952118402
-  // Example: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/Fabrikam/providers/Microsoft.ServiceBus/namespaces/fabrikam
-  // 0 -> '', 1 -> 'subscriptions', 2 -> '00000000-0000-0000-0000-000000000000', 3 -> 'resourceGroups'
-  // 4 -> 'Fabrikam', 5 -> 'providers', 6 -> 'Microsoft.ServiceBus' 7 -> 'namespaces'
-  // 8 -> 'fabrikam'
-  name: split(serviceBusNamespaceId, '/')[8]
-  scope: resourceGroup(split(serviceBusNamespaceId, '/')[2], split(serviceBusNamespaceId, '/')[4])
-
-  resource authorizationRule 'AuthorizationRules' existing = { name: 'RootManageSharedAccessKey' }
-}
-
-/* Storage Account */
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = if (eventBusTransport == 'QueueStorage' && !hasProvidedStorageAccount) {
-  name: '${name}-${collisionSuffix}'
+resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = if (eventBusTransport == 'QueueStorage') {
+  name: '${name}${collisionSuffix}'
   location: location
   kind: 'StorageV2'
   sku: { name: 'Standard_LRS' }
@@ -83,15 +64,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = if (eve
     supportsHttpsTrafficOnly: true
     networkAcls: { bypass: 'AzureServices', defaultAction: 'Allow' }
   }
-}
-resource providedStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = if (eventBusTransport == 'QueueStorage' && hasProvidedStorageAccount) {
-  // Inspired by https://github.com/Azure/bicep/issues/1722#issuecomment-952118402
-  // Example: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/Fabrikam/providers/Microsoft.Storage/storageAccounts/fabrikam
-  // 0 -> '', 1 -> 'subscriptions', 2 -> '00000000-0000-0000-0000-000000000000', 3 -> 'resourceGroups'
-  // 4 -> 'Fabrikam', 5 -> 'providers', 6 -> 'Microsoft.Storage' 7 -> 'storageAccounts'
-  // 8 -> 'fabrikam'
-  name: split(storageAccountId, '/')[8]
-  scope: resourceGroup(split(storageAccountId, '/')[2], split(storageAccountId, '/')[4])
 }
 
 /* LogAnalytics */
@@ -157,7 +129,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
         eventBusTransport == 'ServiceBus' ? [
           {
             name: 'connection-strings-asb-scaler'
-            value: hasProvidedServiceBusNamespace ? providedServiceBusNamespace::authorizationRule.listKeys().primaryConnectionString : serviceBusNamespace::authorizationRule.listKeys().primaryConnectionString
+            value: serviceBusNamespace::authorizationRule.listKeys().primaryConnectionString
           }
         ] : [],
         eventBusTransport == 'QueueStorage' ? [
@@ -166,8 +138,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             //'DefaultEndpointsProtocol=https;AccountName=<name>;EndpointSuffix=<suffix>;AccountKey=<key>'
             value: join([
                 'DefaultEndpointsProtocol=https'
-                'AccountName=${hasProvidedStorageAccount ? providedStorageAccount.name : storageAccount.name}'
-                'AccountKey=${hasProvidedStorageAccount ? providedStorageAccount.listKeys().keys[0].value : storageAccount.listKeys().keys[0].value}'
+                'AccountName=${storageAccount.name}'
+                'AccountKey=${storageAccount.listKeys().keys[0].value}'
                 'EndpointSuffix=${environment().suffixes.storage}'
               ], ';')
           }
@@ -191,11 +163,11 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'EventBus__Transports__azure-service-bus__FullyQualifiedNamespace'
               // manipulating https://{your-namespace}.servicebus.windows.net:443/
-              value: eventBusTransport == 'ServiceBus' ? split(split(hasProvidedServiceBusNamespace ? providedServiceBusNamespace.properties.serviceBusEndpoint : serviceBusNamespace.properties.serviceBusEndpoint, '/')[2], ':')[0] : ''
+              value: eventBusTransport == 'ServiceBus' ? split(split(serviceBusNamespace.properties.serviceBusEndpoint, '/')[2], ':')[0] : ''
             }
             {
               name: 'EventBus__Transports__azure-queue-storage__ServiceUrl'
-              value: eventBusTransport == 'QueueStorage' ? (hasProvidedStorageAccount ? providedStorageAccount.properties.primaryEndpoints.queue : storageAccount.properties.primaryEndpoints.queue) : ''
+              value: eventBusTransport == 'QueueStorage' ? (storageAccount.properties.primaryEndpoints.queue) : ''
             }
           ]
           resources: { cpu: json('0.25'), memory: '0.5Gi' } // these are the least resources we can provision
