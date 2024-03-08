@@ -3,10 +3,12 @@
   "profiles": {
     "Tingle.AzureCleaner": {
       "commandName": "Project",
+      //"commandLineArgs": "Tingle.AzureCleaner --pr 12",
       "launchBrowser": true,
       "launchUrl": "health",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        //"CLI": "true"
       },
       "applicationUrl": "https://localhost:44392;http://localhost:59271"
     },
