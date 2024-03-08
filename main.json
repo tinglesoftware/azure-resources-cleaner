@@ -11,7 +11,7 @@
     },
     "name": {
       "type": "string",
-      "defaultValue": "azdo-cleaner",
+      "defaultValue": "azure-cleaner",
       "metadata": {
         "description": "Name of all resources."
       }
@@ -200,8 +200,8 @@
         "template": {
           "containers": [
             {
-              "image": "[format('ghcr.io/tinglesoftware/azure-devops-cleaner:{0}', parameters('dockerImageTag'))]",
-              "name": "azdo-cleaner",
+              "image": "[format('ghcr.io/tinglesoftware/azure-resources-cleaner:{0}', parameters('dockerImageTag'))]",
+              "name": "azure-cleaner",
               "env": [
                 {
                   "name": "AZURE_CLIENT_ID",
@@ -220,7 +220,7 @@
                   "secretRef": "notifications-password"
                 },
                 {
-                  "name": "Handler__Projects__0",
+                  "name": "Cleaner__AzdoProjects__0",
                   "secretRef": "project-and-token-0"
                 },
                 {

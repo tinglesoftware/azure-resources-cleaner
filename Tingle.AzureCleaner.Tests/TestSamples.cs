@@ -1,4 +1,4 @@
-﻿namespace Tingle.AzdoCleaner.Tests;
+﻿namespace Tingle.AzureCleaner.Tests;
 
 internal class TestSamples
 {

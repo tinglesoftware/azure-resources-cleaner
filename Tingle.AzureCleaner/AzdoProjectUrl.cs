@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace Tingle.AzdoCleaner;
+namespace Tingle.AzureCleaner;
 
 public readonly struct AzdoProjectUrl : IEquatable<AzdoProjectUrl>
 {

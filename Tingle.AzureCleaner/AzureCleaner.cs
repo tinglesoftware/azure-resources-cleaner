@@ -24,55 +24,59 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Tingle.AzdoCleaner;
+namespace Tingle.AzureCleaner;
 
-internal class AzdoEventHandler
+internal class AzureCleaner
 {
     private readonly IMemoryCache cache;
-    private readonly AzureDevOpsEventHandlerOptions options;
+    private readonly AzureCleanerOptions options;
     private readonly ILogger logger;
 
-    private readonly Dictionary<string, string> projects;
+    private readonly Dictionary<string, string> azdoProjects;
 
-    public AzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger)
+    public AzureCleaner(IMemoryCache cache, IOptions<AzureCleanerOptions> options, ILogger<AzureCleaner> logger)
     {
         this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
         this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        projects = this.options.Projects.Select(e => e.Split(";")).ToDictionary(s => s[0], s => s[1]);
+        azdoProjects = this.options.AzdoProjects.Select(e => e.Split(";")).ToDictionary(s => s[0], s => s[1]);
     }
 
-    public virtual async Task HandleAsync(int prId, string remoteUrl, string rawProjectUrl, CancellationToken cancellationToken = default)
+    public virtual async Task HandleAsync(int prId, string? remoteUrl = null, string? rawProjectUrl = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(remoteUrl);
-        ArgumentNullException.ThrowIfNull(rawProjectUrl);
+        var possibleNames = MakePossibleNames([prId]);
 
-        if (!TryFindProject(rawProjectUrl, out var url, out var token)
-            && !TryFindProject(remoteUrl, out url, out token))
+        if (remoteUrl is not null || rawProjectUrl is not null)
         {
-            logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
+            if (TryFindAzdoProject(rawProjectUrl, out var url, out var token)
+                || TryFindAzdoProject(remoteUrl, out url, out token))
+            {
+                await DeleteReviewAppsEnvironmentsAsync(url, token, possibleNames, cancellationToken);
+            }
+            else
+            {
+                logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
+            }
         }
 
-        await DeleteReviewAppResourcesAsync(url, token, [prId], cancellationToken);
+        await DeleteAzureResourcesAsync(possibleNames, cancellationToken);
     }
 
-    internal virtual bool TryFindProject(string rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)
+    internal virtual bool TryFindAzdoProject(string? rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)
     {
+        url = default;
+        token = default;
+        if (string.IsNullOrWhiteSpace(rawUrl)) return false;
+
         url = (AzdoProjectUrl)rawUrl;
-        return projects.TryGetValue(url, out token);
+        return azdoProjects.TryGetValue(url, out token);
     }
 
-    protected virtual async Task DeleteReviewAppResourcesAsync(AzdoProjectUrl url, string? token, IEnumerable<int> prIds, CancellationToken cancellationToken = default)
+    protected virtual async Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken = default)
     {
         var credential = new DefaultAzureCredential();
         var client = new ArmClient(credential);
-
-        var possibleNames = MakePossibleNames(prIds);
-        if (token is not null)
-        {
-            await DeleteReviewAppsEnvironmentsAsync(url, token, possibleNames, cancellationToken);
-        }
 
         logger.LogDebug("Finding azure subscriptions ...");
         var subscriptions = client.GetSubscriptions().GetAllAsync(cancellationToken);
@@ -141,6 +145,7 @@ internal class AzdoEventHandler
             }
         }
     }
+
     protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
     {
         var groups = sub.GetResourceGroups();
@@ -858,9 +863,9 @@ internal class AzdoEventHandler
     }
 }
 
-public class AzureDevOpsEventHandlerOptions
+public class AzureCleanerOptions
 {
-    public List<string> Projects { get; set; } = [];
+    public List<string> AzdoProjects { get; set; } = [];
 
     public bool AzureResourceGroups { get; set; } = true;
     public bool AzureKubernetes { get; set; } = true;

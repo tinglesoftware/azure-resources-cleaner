@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using MiniValidation;
 using System.Text.Json;
-using Tingle.AzdoCleaner;
+using Tingle.AzureCleaner;
 using Tingle.EventBus;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,7 +23,7 @@ builder.Services.AddSerilog(builder =>
 
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddAuthentication()
-                .AddBasic<BasicUserValidationService>(options => options.Realm = "AzdoCleaner");
+                .AddBasic<BasicUserValidationService>(options => options.Realm = "AzureCleaner");
 
 builder.Services.AddAuthorization(options =>
 {
@@ -31,7 +31,7 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.DefaultPolicy;
 });
 
-builder.Services.AddNotificationsHandler(builder.Configuration.GetSection("Handler"));
+builder.Services.AddCleaner(builder.Configuration.GetSection("Cleaner"));
 
 // Add event bus
 var selectedTransport = builder.Configuration.GetValue<EventBusTransportKind?>("EventBus:SelectedTransport");
@@ -79,11 +79,11 @@ internal enum EventBusTransportKind { InMemory, ServiceBus, QueueStorage, }
 
 internal static class IServiceCollectionExtensions
 {
-    public static IServiceCollection AddNotificationsHandler(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCleaner(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddMemoryCache();
-        services.Configure<AzureDevOpsEventHandlerOptions>(configuration);
-        services.AddSingleton<AzdoEventHandler>();
+        services.Configure<AzureCleanerOptions>(configuration);
+        services.AddSingleton<AzureCleaner>();
 
         return services;
     }
@@ -95,7 +95,7 @@ internal static class IEndpointRouteBuilderExtensions
     {
         return builder.MapPost("/webhooks/azure", async (ILoggerFactory loggerFactory, IEventPublisher publisher, [FromBody] AzdoEvent model) =>
         {
-            var logger = loggerFactory.CreateLogger("Tingle.AzdoCleaner.Webhooks");
+            var logger = loggerFactory.CreateLogger("Tingle.AzureCleaner.Webhooks");
             if (!MiniValidator.TryValidate(model, out var errors)) return Results.ValidationProblem(errors);
 
             var type = model.EventType;
@@ -139,7 +139,7 @@ internal static class IEndpointRouteBuilderExtensions
             else
             {
                 logger.LogWarning("Events of type {EventType} are not supported." +
-                                  " If you wish to support them you can clone the repository or contribute a PR at https://github.com/tinglesoftware/azure-devops-cleaner",
+                                  " If you wish to support them you can clone the repository or contribute a PR at https://github.com/tinglesoftware/azure-resources-cleaner",
                                   type);
             }
 
@@ -155,12 +155,12 @@ internal class AzdoCleanupEvent
     public required string RawProjectUrl { get; init; }
 }
 
-internal class ProcessAzdoCleanupEventConsumer(AzdoEventHandler handler) : IEventConsumer<AzdoCleanupEvent>
-{    
+internal class ProcessAzdoCleanupEventConsumer(AzureCleaner cleaner) : IEventConsumer<AzdoCleanupEvent>
+{
     public async Task ConsumeAsync(EventContext<AzdoCleanupEvent> context, CancellationToken cancellationToken)
     {
         var evt = context.Event;
-        await handler.HandleAsync(prId: evt.PullRequestId,
+        await cleaner.HandleAsync(prId: evt.PullRequestId,
                                   remoteUrl: evt.RemoteUrl,
                                   rawProjectUrl: evt.RawProjectUrl,
                                   cancellationToken: cancellationToken);

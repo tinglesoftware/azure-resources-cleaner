@@ -2,7 +2,7 @@
 param location string = resourceGroup().location
 
 @description('Name of all resources.')
-param name string = 'azdo-cleaner'
+param name string = 'azure-cleaner'
 
 @description('Tag of the docker image.')
 param dockerImageTag string = '#{DOCKER_IMAGE_TAG}#'
@@ -176,8 +176,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
     template: {
       containers: [
         {
-          image: 'ghcr.io/tinglesoftware/azure-devops-cleaner:${dockerImageTag}'
-          name: 'azdo-cleaner'
+          image: 'ghcr.io/tinglesoftware/azure-resources-cleaner:${dockerImageTag}'
+          name: 'azure-cleaner'
           env: [
             { name: 'AZURE_CLIENT_ID', value: managedIdentity.properties.clientId } // Specifies the User-Assigned Managed Identity to use. Without this, the app attempt to use the system assigned one.
             { name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED', value: 'true' }
@@ -185,7 +185,7 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             { name: 'ApplicationInsights__ConnectionString', secretRef: 'connection-strings-application-insights' }
             { name: 'Authentication__ServiceHooks__Credentials__vsts', secretRef: 'notifications-password' }
 
-            { name: 'Handler__Projects__0', secretRef: 'project-and-token-0' }
+            { name: 'Cleaner__AzdoProjects__0', secretRef: 'project-and-token-0' }
 
             { name: 'EventBus__SelectedTransport', value: eventBusTransport }
             {

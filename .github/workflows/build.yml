@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
-      IMAGE_NAME: 'azure-devops-cleaner'
+      IMAGE_NAME: 'azure-resources-cleaner'
       DOCKER_BUILDKIT: 1 # Enable Docker BuildKit
 
     steps:
@@ -62,9 +62,9 @@ jobs:
     - name: Publish
       run: |
         dotnet publish \
-        ${{ github.workspace }}/Tingle.AzdoCleaner/Tingle.AzdoCleaner.csproj \
+        ${{ github.workspace }}/Tingle.AzureCleaner/Tingle.AzureCleaner.csproj \
         -c Release \
-        -o ${{ github.workspace }}/drop/Tingle.AzdoCleaner
+        -o ${{ github.workspace }}/drop/Tingle.AzureCleaner
 
     - name: Replace tokens
       uses: cschleiden/replace-tokens@v1
@@ -109,11 +109,12 @@ jobs:
 
     - name: Pull Docker base image & warm Docker cache
       run: docker pull "ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest"
+      continue-on-error: true
 
     - name: Build image
       run: |
         docker build \
-        -f Tingle.AzdoCleaner/Dockerfile \
+        -f Tingle.AzureCleaner/Dockerfile \
         --label com.github.image.run.id=${{ github.run_id }} \
         --label com.github.image.run.number=${{ github.run_number }} \
         --label com.github.image.job.id=${{ github.job }} \
