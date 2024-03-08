@@ -1,16 +1,19 @@
-# Azure DevOps Cleaner
+# Azure Resources Cleaner
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tinglesoftware/azure-resources-cleaner/build.yml?branch=main&style=flat-square)
 [![Release](https://img.shields.io/github/release/tinglesoftware/azure-resources-cleaner.svg?style=flat-square)](https://github.com/tinglesoftware/azure-resources-cleaner/releases/latest)
 [![license](https://img.shields.io/github/license/tinglesoftware/azure-resources-cleaner.svg?style=flat-square)](LICENSE)
 
-This repository houses a convenience tool for cleaning up resources based on the terminal status of pull requests in Azure DevOps. This is particularly useful in removing the reviewApp resources in environments, that created automatically by Azure Pipelines. In addition, it will also cleanup resources deployed to Azure.
+This repository houses a convenience tool for cleaning up resources based on the terminal status of pull requests. This is particularly useful in removing the `reviewApp` resources in environments, that created automatically by Azure Pipelines. In addition, it will also clean up resources deployed to Azure.
 
 > Review/preview applications and resources are generally created in PR-based workflows to allow team members review/preview changes before they are merged. They can also be useful in preventing bugs such as application startup errors from being merged. This pattern is generally considered a good practice and is used widely. You should consider making use of it if you aren't already.
 
 ## Documentation
 
 - [Setup](#setup)
+  - [CLI tool](#cli-tool)
+    - [Locally](#cli-tool-locally)
+    - [GitHub Actions](#cli-tool-with-github-actions)
   - [Deployment to Azure](#deployment-to-azure)
   - [Azure DevOps Service Hooks and Subscriptions](#azure-devops-service-hooks-and-subscriptions)
 - [What is supported](#what-is-supported)
@@ -20,6 +23,72 @@ This repository houses a convenience tool for cleaning up resources based on the
 - [Keeping updated](#keeping-updated)
 
 ## Setup
+
+### CLI tool
+
+The easiest way to run the tool is via CLI using .NET tools. This can help you when working locally or when working outside Azure Pipelines.
+
+#### CLI tool locally
+
+As a global tool:
+
+```bash
+dotnet tool install --global azure-resources-cleaner
+azrc -h
+azrc --pr <pull-request-number-here>
+```
+
+As a local tool:
+
+```bash
+dotnet new tool-manifest
+dotnet tool install azure-resources-cleaner
+dotnet azrc -h
+dotnet azrc --pr <pull-request-number-here>
+```
+
+#### CLI tool with GitHub Actions
+
+This tool can be used to clean up review resources using GitHub Actions. See the workflow below:
+
+```yaml
+name: Remove Review Resources
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+    paths-ignore:
+    - README.md
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Pull request number'
+        required: true
+        type: number
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  remove:
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    name: 🗑️ Remove
+
+    steps:
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Remove review resources
+      run: |
+        dotnet tool install --global azure-resources-cleaner && \
+        azrc \
+        --pr ${{ inputs.pr || github.event.pull_request.number }} \
+        --subscription ${{ env.AZURE_SUBSCRIPTION_ID }}
+```
 
 ### Deployment to Azure
 
