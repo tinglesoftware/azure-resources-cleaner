@@ -41,13 +41,14 @@ else
         new Option<string?>(["--remote", "--remote-url"], "Remote URL of the Azure DevOps repository."),
         new Option<string?>(["--project", "--project-url"], "Project URL. Overrides the remote URL when provided."),
     };
-    root.Handler = CommandHandler.Create(async (IHost host, int pullRequestId, string[] subscription, string? remoteUrl, string? projectUrl) =>
+    root.Handler = CommandHandler.Create(async (IHost host, int pullRequestId, string[] subscription, string? remoteUrl, string? projectUrl, CancellationToken cancellationToken) =>
     {
         var cleaner = host.Services.GetRequiredService<AzureCleaner>();
         await cleaner.HandleAsync(prId: pullRequestId,
                                   subscriptionIdsOrNames: subscription,
                                   remoteUrl: remoteUrl,
-                                  rawProjectUrl: projectUrl);
+                                  rawProjectUrl: projectUrl,
+                                  cancellationToken: cancellationToken);
     });
 
     var clb = new CommandLineBuilder(root)
