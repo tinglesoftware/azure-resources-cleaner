@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Deterministic>true</Deterministic>
     <IsPackable>true</IsPackable> <!-- Needed when OutputType is Exe -->
     <Description>Cleanup tool for Azure resources for reviews.</Description>
@@ -15,6 +16,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Tingle.AzureCleaner.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -12,6 +12,7 @@ on:
     - docs/**
     - README.md
     - LICENSE
+    - '**/README.md'
   pull_request:
     branches:
     - main
@@ -21,6 +22,7 @@ on:
     - docs/**
     - README.md
     - LICENSE
+    - '**/README.md'
   workflow_dispatch:
 
 env:
