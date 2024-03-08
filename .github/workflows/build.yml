@@ -110,7 +110,7 @@ jobs:
       with:
         files: '["${{ github.workspace }}/deploy/main.parameters.json"]'
       env:
-        DOCKER_IMAGE_TAG: ${{ steps.gitversion.outputs.shortSha }}
+        DOCKER_IMAGE_TAG: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
         NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
         CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
 
