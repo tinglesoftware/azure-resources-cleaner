@@ -52,20 +52,6 @@
         "description": "Merge strategy to use when setting auto complete on created pull requests."
       }
     },
-    "serviceBusNamespaceId": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Resource identifier of the ServiceBus namespace to use. If none is provided, a new one is created."
-      }
-    },
-    "storageAccountId": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "Resource identifier of the storage account to use. If none is provided, a new one is created."
-      }
-    },
     "logAnalyticsWorkspaceId": {
       "type": "string",
       "defaultValue": "",
@@ -82,8 +68,6 @@
     }
   },
   "variables": {
-    "hasProvidedServiceBusNamespace": "[and(not(equals(parameters('serviceBusNamespaceId'), null())), not(empty(parameters('serviceBusNamespaceId'))))]",
-    "hasProvidedStorageAccount": "[and(not(equals(parameters('storageAccountId'), null())), not(empty(parameters('storageAccountId'))))]",
     "hasProvidedLogAnalyticsWorkspace": "[and(not(equals(parameters('logAnalyticsWorkspaceId'), null())), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
     "hasProvidedAppEnvironment": "[and(not(equals(parameters('appEnvironmentId'), null())), not(empty(parameters('appEnvironmentId'))))]",
     "collisionSuffix": "[uniqueString(resourceGroup().id)]"
@@ -96,7 +80,7 @@
       "location": "[parameters('location')]"
     },
     {
-      "condition": "[and(equals(parameters('eventBusTransport'), 'ServiceBus'), not(variables('hasProvidedServiceBusNamespace')))]",
+      "condition": "[equals(parameters('eventBusTransport'), 'ServiceBus')]",
       "type": "Microsoft.ServiceBus/namespaces",
       "apiVersion": "2021-11-01",
       "name": "[format('{0}-{1}', parameters('name'), variables('collisionSuffix'))]",
@@ -110,10 +94,10 @@
       }
     },
     {
-      "condition": "[and(equals(parameters('eventBusTransport'), 'QueueStorage'), not(variables('hasProvidedStorageAccount')))]",
+      "condition": "[equals(parameters('eventBusTransport'), 'QueueStorage')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-01-01",
-      "name": "[format('{0}-{1}', parameters('name'), variables('collisionSuffix'))]",
+      "name": "[format('{0}{1}', parameters('name'), variables('collisionSuffix'))]",
       "location": "[parameters('location')]",
       "kind": "StorageV2",
       "sku": {
@@ -195,7 +179,7 @@
               }
             ]
           },
-          "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'notifications-password', 'value', parameters('notificationsPassword')), createObject('name', 'project-and-token-0', 'value', format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', if(variables('hasProvidedServiceBusNamespace'), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('serviceBusNamespaceId'), '/')[2], split(parameters('serviceBusNamespaceId'), '/')[4]), 'Microsoft.ServiceBus/namespaces/AuthorizationRules', split(parameters('serviceBusNamespaceId'), '/')[8], 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString, listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString))), createArray()), if(equals(parameters('eventBusTransport'), 'QueueStorage'), createArray(createObject('name', 'connection-strings-storage-scaler', 'value', join(createArray('DefaultEndpointsProtocol=https', format('AccountName={0}', if(variables('hasProvidedStorageAccount'), split(parameters('storageAccountId'), '/')[8], format('{0}-{1}', parameters('name'), variables('collisionSuffix')))), format('AccountKey={0}', if(variables('hasProvidedStorageAccount'), listKeys(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2023-01-01').keys[0].value, listKeys(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').keys[0].value)), format('EndpointSuffix={0}', environment().suffixes.storage)), ';'))), createArray()))]"
+          "secrets": "[concat(createArray(createObject('name', 'connection-strings-application-insights', 'value', reference(resourceId('Microsoft.Insights/components', parameters('name')), '2020-02-02').ConnectionString), createObject('name', 'notifications-password', 'value', parameters('notificationsPassword')), createObject('name', 'project-and-token-0', 'value', format('{0};{1}', parameters('azureDevOpsProjectUrl'), parameters('azureDevOpsProjectToken')))), if(equals(parameters('eventBusTransport'), 'ServiceBus'), createArray(createObject('name', 'connection-strings-asb-scaler', 'value', listKeys(resourceId('Microsoft.ServiceBus/namespaces/AuthorizationRules', format('{0}-{1}', parameters('name'), variables('collisionSuffix')), 'RootManageSharedAccessKey'), '2021-11-01').primaryConnectionString)), createArray()), if(equals(parameters('eventBusTransport'), 'QueueStorage'), createArray(createObject('name', 'connection-strings-storage-scaler', 'value', join(createArray('DefaultEndpointsProtocol=https', format('AccountName={0}', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), format('AccountKey={0}', listKeys(resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').keys[0].value), format('EndpointSuffix={0}', environment().suffixes.storage)), ';'))), createArray()))]"
         },
         "template": {
           "containers": [
@@ -229,11 +213,11 @@
                 },
                 {
                   "name": "EventBus__Transports__azure-service-bus__FullyQualifiedNamespace",
-                  "value": "[if(equals(parameters('eventBusTransport'), 'ServiceBus'), split(split(if(variables('hasProvidedServiceBusNamespace'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('serviceBusNamespaceId'), '/')[2], split(parameters('serviceBusNamespaceId'), '/')[4]), 'Microsoft.ServiceBus/namespaces', split(parameters('serviceBusNamespaceId'), '/')[8]), '2021-11-01').serviceBusEndpoint, reference(resourceId('Microsoft.ServiceBus/namespaces', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2021-11-01').serviceBusEndpoint), '/')[2], ':')[0], '')]"
+                  "value": "[if(equals(parameters('eventBusTransport'), 'ServiceBus'), split(split(reference(resourceId('Microsoft.ServiceBus/namespaces', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2021-11-01').serviceBusEndpoint, '/')[2], ':')[0], '')]"
                 },
                 {
                   "name": "EventBus__Transports__azure-queue-storage__ServiceUrl",
-                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), if(variables('hasProvidedStorageAccount'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('storageAccountId'), '/')[2], split(parameters('storageAccountId'), '/')[4]), 'Microsoft.Storage/storageAccounts', split(parameters('storageAccountId'), '/')[8]), '2023-01-01').primaryEndpoints.queue, reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').primaryEndpoints.queue), '')]"
+                  "value": "[if(equals(parameters('eventBusTransport'), 'QueueStorage'), reference(resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix'))), '2023-01-01').primaryEndpoints.queue, '')]"
                 }
               ],
               "resources": {
@@ -271,7 +255,7 @@
         "[resourceId('Microsoft.Insights/components', parameters('name'))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]",
         "[resourceId('Microsoft.ServiceBus/namespaces', format('{0}-{1}', parameters('name'), variables('collisionSuffix')))]",
-        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}-{1}', parameters('name'), variables('collisionSuffix')))]"
+        "[resourceId('Microsoft.Storage/storageAccounts', format('{0}{1}', parameters('name'), variables('collisionSuffix')))]"
       ]
     },
     {
