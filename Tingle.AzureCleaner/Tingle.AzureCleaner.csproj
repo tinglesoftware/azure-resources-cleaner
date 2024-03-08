@@ -1,6 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Deterministic>true</Deterministic>
+    <IsPackable>true</IsPackable> <!-- Needed when OutputType is Exe -->
+    <Description>Cleanup tool for Azure resources for reviews.</Description>
+    <Product>Azure resources cleaner</Product>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>azrc</ToolCommandName>
+    <PackageId>azure-resources-cleaner</PackageId>
     <UserSecretsId>e0d97303-f1d9-4a35-84ab-7df2862ec01e</UserSecretsId>
     <VersionPrefix Condition="'$(GITVERSION_NUGETVERSION)' != ''">$(GITVERSION_NUGETVERSION)</VersionPrefix>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>

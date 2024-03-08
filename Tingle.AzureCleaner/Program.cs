@@ -9,7 +9,7 @@ using Tingle.AzureCleaner;
 
 var builder = WebApplication.CreateBuilder(args);
 
-if (!builder.Configuration.GetValue<bool>("CLI"))
+if (builder.Configuration.GetValue<bool>("AS_WEB_APP"))
 {
     builder.Services.AddApplicationInsightsTelemetry()
                     .AddSerilog(sb => sb.ConfigureSensitiveDataMasking(o => o.ExcludeProperties.AddRange(["ProjectUrl", "RemoteUrl", "ResourceId"])))
