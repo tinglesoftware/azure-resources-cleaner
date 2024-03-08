@@ -11,6 +11,8 @@ updates:
       interval: "weekly"
       time: "02:00"
     groups:
+      command-line:
+        patterns: ["System.CommandLine*"]
       event-bus:
         patterns: ["Tingle.EventBus.*"]
       microsoft:
