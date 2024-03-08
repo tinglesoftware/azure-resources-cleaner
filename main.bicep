@@ -35,7 +35,8 @@ param appEnvironmentId string = ''
 var hasProvidedLogAnalyticsWorkspace = (logAnalyticsWorkspaceId != null && !empty(logAnalyticsWorkspaceId))
 var hasProvidedAppEnvironment = (appEnvironmentId != null && !empty(appEnvironmentId))
 // avoid conflicts across multiple deployments for resources that generate FQDN based on the name
-var collisionSuffix = uniqueString(resourceGroup().id) // e.g. zecnx476et7xm (13 characters)
+// original uniqueString(resourceGroup().id) produces a 13 character string but some resources have a 24 character limit
+var collisionSuffix = substring(uniqueString(resourceGroup().id), 0, 24 - length(name) - 1) // e.g. zecnx476et (9 characters)
 
 /* Managed Identity */
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -152,8 +153,8 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
       secrets: concat(
         [
           { name: 'connection-strings-application-insights', value: appInsights.properties.ConnectionString }
-          { name: 'project-and-token-0', keyVaultUrl: projectAndToken0Secret.properties.secretUri, identity: managedIdentity.id  }
-          { name: 'notifications-password', keyVaultUrl: notificationsPasswordSecret.properties.secretUri, identity: managedIdentity.id  }
+          { name: 'project-and-token-0', keyVaultUrl: projectAndToken0Secret.properties.secretUri, identity: managedIdentity.id }
+          { name: 'notifications-password', keyVaultUrl: notificationsPasswordSecret.properties.secretUri, identity: managedIdentity.id }
         ],
         eventBusTransport == 'ServiceBus' ? [
           {

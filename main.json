@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.25.53.49325",
-      "templateHash": "10375665846729999136"
+      "templateHash": "13127300503667523580"
     }
   },
   "parameters": {
@@ -77,7 +77,7 @@
   "variables": {
     "hasProvidedLogAnalyticsWorkspace": "[and(not(equals(parameters('logAnalyticsWorkspaceId'), null())), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
     "hasProvidedAppEnvironment": "[and(not(equals(parameters('appEnvironmentId'), null())), not(empty(parameters('appEnvironmentId'))))]",
-    "collisionSuffix": "[uniqueString(resourceGroup().id)]"
+    "collisionSuffix": "[substring(uniqueString(resourceGroup().id), 0, sub(sub(24, length(parameters('name'))), 1))]"
   },
   "resources": [
     {
