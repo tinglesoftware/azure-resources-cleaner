@@ -7,23 +7,23 @@ EXPOSE 8080
 EXPOSE 8081
 
 LABEL org.opencontainers.image.description="Cleanup tool for Azure resources based on Azure DevOps PRs" \
-      org.opencontainers.image.source="https://github.com/tinglesoftware/azure-devops-cleaner"
+      org.opencontainers.image.source="https://github.com/tinglesoftware/azure-resources-cleaner"
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Build.props", "."]
-COPY ["Tingle.AzdoCleaner/Tingle.AzdoCleaner.csproj", "Tingle.AzdoCleaner/"]
-RUN dotnet restore "./Tingle.AzdoCleaner/./Tingle.AzdoCleaner.csproj"
+COPY ["Tingle.AzureCleaner/Tingle.AzureCleaner.csproj", "Tingle.AzureCleaner/"]
+RUN dotnet restore "./Tingle.AzureCleaner/./Tingle.AzureCleaner.csproj"
 COPY . .
-WORKDIR "/src/Tingle.AzdoCleaner"
-RUN dotnet build "./Tingle.AzdoCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/Tingle.AzureCleaner"
+RUN dotnet build "./Tingle.AzureCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Tingle.AzdoCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./Tingle.AzureCleaner.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Tingle.AzdoCleaner.dll"]
+ENTRYPOINT ["dotnet", "Tingle.AzureCleaner.dll"]

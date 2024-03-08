@@ -1,6 +1,6 @@
 ﻿using AspNetCore.Authentication.Basic;
 
-namespace Tingle.AzdoCleaner;
+namespace Tingle.AzureCleaner;
 
 internal class BasicUserValidationService(IConfiguration configuration) : IBasicUserValidationService
 {

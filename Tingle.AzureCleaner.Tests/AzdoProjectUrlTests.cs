@@ -1,6 +1,6 @@
 ﻿using Xunit;
 
-namespace Tingle.AzdoCleaner.Tests;
+namespace Tingle.AzureCleaner.Tests;
 
 public class AzdoProjectUrlTests
 {

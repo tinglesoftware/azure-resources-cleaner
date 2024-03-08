@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32901.215
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tingle.AzdoCleaner", "Tingle.AzdoCleaner\Tingle.AzdoCleaner.csproj", "{F3BDB109-999B-4F3C-A6C5-745CC5BE4B68}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tingle.AzureCleaner", "Tingle.AzureCleaner\Tingle.AzureCleaner.csproj", "{F3BDB109-999B-4F3C-A6C5-745CC5BE4B68}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tingle.AzdoCleaner.Tests", "Tingle.AzdoCleaner.Tests\Tingle.AzdoCleaner.Tests.csproj", "{BCDFC1A1-1FF4-4F26-9DEC-676CEC1418BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tingle.AzureCleaner.Tests", "Tingle.AzureCleaner.Tests\Tingle.AzureCleaner.Tests.csproj", "{BCDFC1A1-1FF4-4F26-9DEC-676CEC1418BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

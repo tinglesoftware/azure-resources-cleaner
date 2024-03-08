@@ -14,7 +14,7 @@ using Tingle.EventBus.Transports.InMemory;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Tingle.AzdoCleaner.Tests;
+namespace Tingle.AzureCleaner.Tests;
 
 public class EndpointTests(ITestOutputHelper outputHelper)
 {
@@ -122,7 +122,7 @@ public class EndpointTests(ITestOutputHelper outputHelper)
             {
                 builder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Handler:Projects:0"] = "https://dev.azure.com/fabrikam/DefaultCollection;123456789",
+                    ["Cleaner:AzdoProjects:0"] = "https://dev.azure.com/fabrikam/DefaultCollection;123456789",
                     ["Authentication:ServiceHooks:Credentials:vsts"] = "burp-bump",
                 });
             })
@@ -130,12 +130,12 @@ public class EndpointTests(ITestOutputHelper outputHelper)
             {
                 var configuration = context.Configuration;
                 services.AddRouting();
-                services.AddNotificationsHandler(configuration.GetSection("Handler"));
-                services.AddSingleton<AzdoEventHandler, ModifiedAzdoEventHandler>();
+                services.AddCleaner(configuration.GetSection("Cleaner"));
+                services.AddSingleton<AzureCleaner, ModifiedAzureCleaner>();
                 services.AddEventBus(builder => builder.AddInMemoryTransport().AddInMemoryTestHarness());
 
                 services.AddAuthentication()
-                        .AddBasic<BasicUserValidationService>(options => options.Realm = "AzdoCleaner");
+                        .AddBasic<BasicUserValidationService>(options => options.Realm = "AzureCleaner");
 
                 services.AddAuthorization(options => options.FallbackPolicy = options.DefaultPolicy);
             })
@@ -173,13 +173,20 @@ public class EndpointTests(ITestOutputHelper outputHelper)
         }
     }
 
-    class ModifiedAzdoEventHandler(IMemoryCache cache, IOptions<AzureDevOpsEventHandlerOptions> options, ILogger<AzdoEventHandler> logger) : AzdoEventHandler(cache, options, logger)
+    class ModifiedAzureCleaner(IMemoryCache cache, IOptions<AzureCleanerOptions> options, ILogger<AzureCleaner> logger) : AzureCleaner(cache, options, logger)
     {
-        public List<(AzdoProjectUrl url, string? token, IEnumerable<int> prIds)> Calls { get; } = [];
+        public List<IReadOnlyCollection<string>> DeleteAzureResourcesAsyncCalls { get; } = [];
+        public List<(AzdoProjectUrl url, string? token, IReadOnlyCollection<string> possibleNames)> DeleteReviewAppsEnvironmentsAsyncCalls { get; } = [];
 
-        protected override Task DeleteReviewAppResourcesAsync(AzdoProjectUrl url, string? token, IEnumerable<int> prIds, CancellationToken cancellationToken = default)
+        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken = default)
         {
-            Calls.Add((url, token, prIds));
+            DeleteAzureResourcesAsyncCalls.Add(possibleNames);
+            return Task.CompletedTask;
+        }
+
+        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+        {
+            DeleteReviewAppsEnvironmentsAsyncCalls.Add((url, token, possibleNames));
             return Task.CompletedTask;
         }
     }

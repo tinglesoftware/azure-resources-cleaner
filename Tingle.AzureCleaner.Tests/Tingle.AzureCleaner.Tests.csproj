@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tingle.AzdoCleaner\Tingle.AzdoCleaner.csproj" />
+    <ProjectReference Include="..\Tingle.AzureCleaner\Tingle.AzureCleaner.csproj" />
   </ItemGroup>
 
 </Project>
