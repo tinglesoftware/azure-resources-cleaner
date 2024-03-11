@@ -5,6 +5,7 @@
         "azuredevops",
         "Keyspaces",
         "Kubernetes",
-        "vsts"
+        "vsts",
+        "xunit"
     ]
 }

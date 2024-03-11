@@ -92,11 +92,11 @@ internal class AzureCleaner
                 && !subscriptionIdsOrNames.Contains(sub.Data.SubscriptionId, StringComparer.OrdinalIgnoreCase)
                 && !subscriptionIdsOrNames.Contains(sub.Data.DisplayName, StringComparer.OrdinalIgnoreCase))
             {
-                logger.LogDebug("Skipping subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
+                logger.LogDebug("Skipping subscription '{SubscriptionName}' ...", sub.Data.DisplayName); // no subscription ID for security reasons
                 continue;
             }
 
-            logger.LogDebug("Searching in subscription '{SubscriptionName} ({SubscriptionId})' ...", sub.Data.DisplayName, sub.Data.SubscriptionId);
+            logger.LogDebug("Searching in subscription '{SubscriptionName}' ...", sub.Data.DisplayName); // no subscription ID for security reasons
 
             // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
             if (options.AzureResourceGroups)
