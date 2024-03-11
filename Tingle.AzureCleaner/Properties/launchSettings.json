@@ -3,7 +3,7 @@
   "profiles": {
     "Tingle.AzureCleaner": {
       "commandName": "Project",
-      //"commandLineArgs": "Tingle.AzureCleaner --pr 3 --subscription DEPENDABOT",
+      //"commandLineArgs": "Tingle.AzureCleaner --pr 3001 --subscription DEPENDABOT",
       "launchBrowser": true,
       "launchUrl": "health",
       "environmentVariables": {

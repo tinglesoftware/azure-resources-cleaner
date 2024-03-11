@@ -64,13 +64,18 @@ else
 
                     ["Logging:LogLevel:Tingle.AzureCleaner"] = "Trace",
 
-                    ["Logging:Console:FormatterName"] = "Simple",
+                    ["Logging:Console:FormatterName"] = "Tingle",
                     ["Logging:Console:FormatterOptions:SingleLine"] = "True",
                     ["Logging:Console:FormatterOptions:IncludeCategory"] = "False",
                     ["Logging:Console:FormatterOptions:IncludeEventId"] = "False",
                     ["Logging:Console:FormatterOptions:IncludeScopes"] = "False",
                     ["Logging:Console:FormatterOptions:TimestampFormat"] = "HH:mm:ss ",
                 });
+            });
+
+            host.ConfigureLogging((context, builder) =>
+            {
+                builder.AddConsoleFormatter<TingleConsoleFormatter, TingleConsoleOptions>();
             });
 
             host.ConfigureServices(services =>
