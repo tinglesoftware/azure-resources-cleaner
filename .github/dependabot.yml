@@ -17,8 +17,15 @@ updates:
         patterns: ["Tingle.EventBus.*"]
       microsoft:
         patterns: ["Microsoft.*"]
+        exclude-patterns:
+          - "Microsoft.TeamFoundationServer.*"
+          - "Microsoft.TeamFoundation.*"
       system:
         patterns: ["System.*"]
+      team-foundation:
+        patterns:
+          - "Microsoft.TeamFoundationServer.*"
+          - "Microsoft.TeamFoundation.*"
       tingle:
         patterns:
           - "Tingle.AspNetCore.*"
