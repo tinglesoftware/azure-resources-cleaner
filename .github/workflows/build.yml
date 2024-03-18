@@ -63,8 +63,22 @@ jobs:
       with:
         dotnet-version: 8.x
 
+    - name: Restore
+      run: dotnet restore
+
+    - name: Build
+      run: >
+        dotnet build
+        --configuration Release
+        --no-restore
+        -p:VersionPrefix=${{ steps.gitversion.outputs.nuGetVersion }}
+
     - name: Test
-      run: dotnet test -c Release --collect "Code coverage"
+      run: >
+        dotnet test
+        --configuration Release
+        --no-build
+        --collect "Code coverage"
 
     - name: Publish
       run: >
@@ -72,8 +86,6 @@ jobs:
         ${{ github.workspace }}/Tingle.AzureCleaner/Tingle.AzureCleaner.csproj
         --configuration Release
         --output ${{ github.workspace }}/drop/Tingle.AzureCleaner
-        -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
-        -p:VersionPrefix=${{ steps.gitversion.outputs.nuGetVersion }}
 
     - name: Pack
       run: >
@@ -82,7 +94,6 @@ jobs:
         --configuration Release
         --output ${{ github.workspace }}/drop
         -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersion }}
-        -p:VersionPrefix=${{ steps.gitversion.outputs.nuGetVersion }}
 
     - name: Replace tokens
       uses: cschleiden/replace-tokens@v1
