@@ -11,6 +11,8 @@ updates:
       interval: "weekly"
       time: "02:00"
     groups:
+      azure:
+        patterns: ['Azure.*']
       command-line:
         patterns: ["System.CommandLine*"]
       event-bus:
@@ -20,6 +22,7 @@ updates:
         exclude-patterns:
           - "Microsoft.TeamFoundationServer.*"
           - "Microsoft.TeamFoundation.*"
+          - "Microsoft.VisualStudio.Azure.Containers.Tools.Targets"
       system:
         patterns: ["System.*"]
       team-foundation:
