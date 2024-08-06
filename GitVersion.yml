@@ -3,4 +3,4 @@
 mode: ContinuousDeployment
 branches:
   pull-request:
-    tag: pr
+    label: pr
