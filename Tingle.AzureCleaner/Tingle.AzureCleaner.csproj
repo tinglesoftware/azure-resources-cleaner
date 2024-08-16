@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>$(PackageTags);azure;reviewapp;reviews;cleanup</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
