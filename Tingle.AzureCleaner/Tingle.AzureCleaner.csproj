@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Deterministic>true</Deterministic>
+    <Authors>Tingle Software</Authors>
+    <Company>Tingle Software</Company>
     <IsPackable>true</IsPackable> <!-- Needed when OutputType is Exe -->
     <Description>Cleanup tool for Azure resources for reviews.</Description>
     <Product>Azure resources cleaner</Product>
@@ -12,6 +13,10 @@
     <PackageId>azure-resources-cleaner</PackageId>
     <UserSecretsId>e0d97303-f1d9-4a35-84ab-7df2862ec01e</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
