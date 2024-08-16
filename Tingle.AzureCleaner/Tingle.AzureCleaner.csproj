@@ -16,6 +16,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <PackageIcon>logo.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>$(PackageTags);azure;reviewapp;reviews;cleanup</PackageTags>
   </PropertyGroup>
@@ -53,6 +54,10 @@
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.22.1" />
     <PackageReference Include="Tingle.EventBus.Transports.InMemory" Version="0.22.1" />
     <PackageReference Include="Tingle.Extensions.Serilog" Version="4.12.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\logo.png" Pack="True" PackagePath="\" />
   </ItemGroup>
 
 </Project>
