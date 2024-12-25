@@ -12,7 +12,6 @@ using System.Text;
 using Tingle.EventBus;
 using Tingle.EventBus.Transports.InMemory;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Tingle.AzureCleaner.Tests;
 
@@ -25,18 +24,18 @@ public class EndpointTests(ITestOutputHelper outputHelper)
         {
             // without Authorization header
             var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.Empty(await response.Content.ReadAsStringAsync());
-            Assert.Empty(await harness.PublishedAsync()); // Ensure no event was published
+            Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
 
             // with wrong value for Authorization header
             request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump5")));
-            response = await client.SendAsync(request);
+            response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-            Assert.Empty(await response.Content.ReadAsStringAsync());
-            Assert.Empty(await harness.PublishedAsync()); // Ensure no event was published
+            Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
         });
     }
 
@@ -47,10 +46,10 @@ public class EndpointTests(ITestOutputHelper outputHelper)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            Assert.Empty(await response.Content.ReadAsStringAsync());
-            Assert.Empty(await harness.PublishedAsync()); // Ensure no event was published
+            Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
         });
     }
 
@@ -62,16 +61,16 @@ public class EndpointTests(ITestOutputHelper outputHelper)
             var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync();
+            var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
             Assert.Contains("\"type\":\"https://tools.ietf.org/html/rfc9110#section-15.5.1\"", body);
             Assert.Contains("\"title\":\"One or more validation errors occurred.\"", body);
             Assert.Contains("\"status\":400", body);
             Assert.Contains("\"SubscriptionId\":[\"The SubscriptionId field is required.\"]", body);
             Assert.Contains("\"EventType\":[\"The EventType field is required.\"]", body);
             Assert.Contains("\"Resource\":[\"The Resource field is required.\"]", body);
-            Assert.Empty(await harness.PublishedAsync()); // Ensure no event was published
+            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
         });
     }
 
@@ -84,10 +83,10 @@ public class EndpointTests(ITestOutputHelper outputHelper)
             var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.UnsupportedMediaType, response.StatusCode);
-            Assert.Empty(await response.Content.ReadAsStringAsync());
-            Assert.Empty(await harness.PublishedAsync()); // Ensure no event was published
+            Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
         });
     }
 
@@ -101,15 +100,15 @@ public class EndpointTests(ITestOutputHelper outputHelper)
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
             request.Content = new StreamContent(stream);
             request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json", "utf-8");
-            var response = await client.SendAsync(request);
+            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             // Ensure event was published
-            var evt_ctx = Assert.IsType<EventContext<AzdoCleanupEvent>>(Assert.Single(await harness.PublishedAsync()));
+            var evt_ctx = Assert.IsType<EventContext<AzdoCleanupEvent>>(Assert.Single(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)));
             Assert.Equal(1, evt_ctx.Event.PullRequestId);
             Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam", evt_ctx.Event.RemoteUrl);
             Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c", evt_ctx.Event.RawProjectUrl);
-            Assert.Empty(await response.Content.ReadAsStringAsync());
+            Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         });
     }
 
@@ -154,7 +153,7 @@ public class EndpointTests(ITestOutputHelper outputHelper)
 
         using var scope = server.Services.CreateScope();
         var provider = scope.ServiceProvider;
-        
+
         var client = server.CreateClient();
 
         var harness = provider.GetRequiredService<InMemoryTestHarness>();

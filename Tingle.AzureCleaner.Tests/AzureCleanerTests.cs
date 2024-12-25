@@ -103,7 +103,8 @@ public class AzureCleanerTests
 
         await cleaner.HandleAsync(prId: 1,
                                   remoteUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam",
-                                  rawProjectUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c");
+                                  rawProjectUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c",
+                                  cancellationToken: TestContext.Current.CancellationToken);
         var possibleNames1 = Assert.Single(cleaner.DeleteAzureResourcesAsyncCalls);
         Assert.Equal(["review-app-1", "ra-1", "ra1"], possibleNames1);
         var (url, token, possibleNames2) = Assert.Single(cleaner.DeleteReviewAppsEnvironmentsAsyncCalls);
