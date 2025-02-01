@@ -1,6 +1,6 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-bookworm-slim AS base
 USER app
 WORKDIR /app
 EXPOSE 8080
@@ -10,7 +10,7 @@ ENV AS_WEB_APP true
 LABEL org.opencontainers.image.description="Cleanup tool for Azure resources for reviews" \
       org.opencontainers.image.source="https://github.com/tinglesoftware/azure-resources-cleaner"
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0-bookworm-slim AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Build.props", "."]
