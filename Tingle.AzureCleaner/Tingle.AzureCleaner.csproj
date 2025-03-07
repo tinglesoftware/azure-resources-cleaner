@@ -43,6 +43,7 @@
   <ItemGroup>
     <PackageReference Include="AspNetCore.Authentication.Basic" Version="9.0.0" />
     <PackageReference Include="Azure.Identity" Version="1.13.2" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.2.0" />
     <PackageReference Include="Azure.ResourceManager.AppContainers" Version="1.3.0" />
     <PackageReference Include="Azure.ResourceManager.AppService" Version="1.3.0" />
     <PackageReference Include="Azure.ResourceManager.ContainerInstance" Version="1.2.1" />
@@ -54,7 +55,6 @@
     <PackageReference Include="Azure.ResourceManager.Sql" Version="1.2.1" />
     <PackageReference Include="KubernetesClient" Version="16.0.2" />
     <PackageReference Include="Macross.Json.Extensions" Version="3.0.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
@@ -64,7 +64,17 @@
     <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.23.1" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.23.1" />
     <PackageReference Include="Tingle.EventBus.Transports.InMemory" Version="0.23.1" />
-    <PackageReference Include="Tingle.Extensions.Serilog" Version="4.14.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.11.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.11.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Process" Version="0.5.0-beta.7" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.11.0" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.8.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Resources.Azure" Version="1.0.0-beta.9" />
+    <PackageReference Include="OpenTelemetry.Resources.Host" Version="0.1.0-beta.3" />
+    <PackageReference Include="OpenTelemetry.Resources.ProcessRuntime" Version="0.1.0-beta.2" />
   </ItemGroup>
 
   <ItemGroup>

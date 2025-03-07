@@ -23,6 +23,8 @@ updates:
           - "Microsoft.TeamFoundationServer.*"
           - "Microsoft.TeamFoundation.*"
           - "Microsoft.VisualStudio.Azure.Containers.Tools.Targets"
+      opentelemetry:
+        patterns: ['OpenTelemetry*']
       system:
         patterns: ["System.*"]
       team-foundation:
