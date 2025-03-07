@@ -9,11 +9,11 @@ using Tingle.AzureCleaner;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddOpenTelemetry();
+
 if (builder.Configuration.GetValue<bool>("AS_WEB_APP"))
 {
-    builder.Services.AddApplicationInsightsTelemetry()
-                    .AddSerilog(sb => sb.ConfigureSensitiveDataMasking(o => o.ExcludeProperties.AddRange(["ProjectUrl", "RemoteUrl", "ResourceId"])))
-                    .AddCleaner(builder.Configuration.GetSection("Cleaner"))
+    builder.Services.AddCleaner(builder.Configuration.GetSection("Cleaner"))
                     .AddEventBus(builder.Configuration)
                     .AddHealthChecks();
 
@@ -61,6 +61,7 @@ else
                     ["Logging:LogLevel:Default"] = "Information",
                     ["Logging:LogLevel:Microsoft"] = "Warning",
                     ["Logging:LogLevel:Microsoft.Hosting.Lifetime"] = "Warning",
+                    ["Logging:LogLevel:OpenTelemetry:Default"] = "Warning", // only export warnings to OpenTelemetry
 
                     ["Logging:LogLevel:Tingle.AzureCleaner"] = "Trace",
 

@@ -247,7 +247,7 @@
                   "value": "true"
                 },
                 {
-                  "name": "ApplicationInsights__ConnectionString",
+                  "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
                   "secretRef": "connection-strings-application-insights"
                 },
                 {
