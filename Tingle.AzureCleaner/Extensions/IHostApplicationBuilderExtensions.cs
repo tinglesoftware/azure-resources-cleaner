@@ -8,14 +8,14 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 internal static class IHostApplicationBuilderExtensions
 {
-    public static T AddOpenTelemetry<T>(this T builderA) where T : IHostApplicationBuilder
+    public static T AddOpenTelemetry<T>(this T builder) where T : IHostApplicationBuilder
     {
-        var environment = builderA.Environment;
-        var configuration = builderA.Configuration;
-        var builder = builderA.Services.AddOpenTelemetry();
+        var environment = builder.Environment;
+        var configuration = builder.Configuration;
+        var otel = builder.Services.AddOpenTelemetry();
 
         // configure the resource
-        builder.ConfigureResource(resource =>
+        otel.ConfigureResource(resource =>
         {
             resource.AddAttributes([new("environment", environment.EnvironmentName)]);
 
@@ -33,14 +33,14 @@ internal static class IHostApplicationBuilderExtensions
         });
 
         // add tracing
-        builder.WithTracing(tracing =>
+        otel.WithTracing(tracing =>
         {
             tracing.AddSource([
                 "Azure.*",
                 "Tingle.EventBus",
             ]);
             tracing.AddHttpClientInstrumentation();
-            tracing.AddSqlClientInstrumentation();
+            tracing.AddAspNetCoreInstrumentation();
 
             // filter out traces we do not need
             tracing.AddProcessor(new FilteringTraceProcessor());
@@ -52,11 +52,12 @@ internal static class IHostApplicationBuilderExtensions
         });
 
         // add metrics
-        builder.WithMetrics(metrics =>
+        otel.WithMetrics(metrics =>
         {
             metrics.AddHttpClientInstrumentation();
             metrics.AddProcessInstrumentation();
             metrics.AddRuntimeInstrumentation();
+            metrics.AddAspNetCoreInstrumentation();
 
             // add exporter to Azure Monitor
             var aics = configuration.GetValue<string?>("APPLICATIONINSIGHTS_CONNECTION_STRING");
@@ -65,7 +66,7 @@ internal static class IHostApplicationBuilderExtensions
         });
 
         // add logging support
-        builderA.Logging.AddOpenTelemetry(options =>
+        builder.Logging.AddOpenTelemetry(options =>
         {
             options.IncludeFormattedMessage = true;
             options.IncludeScopes = true;
@@ -77,6 +78,6 @@ internal static class IHostApplicationBuilderExtensions
                 options.AddAzureMonitorLogExporter(options => options.ConnectionString = aics);
         });
 
-        return builderA;
+        return builder;
     }
 }
