@@ -9,9 +9,10 @@ using Tingle.AzureCleaner;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddOpenTelemetry();
+var isWebApp = builder.Configuration.GetValue<bool>("AS_WEB_APP");
+builder.AddOpenTelemetry(isWebApp);
 
-if (builder.Configuration.GetValue<bool>("AS_WEB_APP"))
+if (isWebApp)
 {
     builder.Services.AddCleaner(builder.Configuration.GetSection("Cleaner"))
                     .AddEventBus(builder.Configuration)
