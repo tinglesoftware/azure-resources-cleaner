@@ -1,7 +1,7 @@
 ﻿using OpenTelemetry;
 using System.Diagnostics;
 
-namespace Tingle.AzureCleaner;
+namespace Tingle.AzureCleaner.OpenTelemetry;
 
 internal sealed class FilteringTraceProcessor : BaseProcessor<Activity>
 {

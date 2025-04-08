@@ -3,12 +3,20 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Tingle.AzureCleaner;
+using Tingle.AzureCleaner.OpenTelemetry;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
 internal static class IHostApplicationBuilderExtensions
 {
-    public static T AddOpenTelemetry<T>(this T builder) where T : IHostApplicationBuilder
+    /// <summary>Adds OpenTelemetry support to the application.</summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="isWebApp">
+    /// <see langword="true"/> if the application is a web app, <see langword="false"/> otherwise.
+    /// </param>
+    /// <returns></returns>
+    public static T AddOpenTelemetry<T>(this T builder, bool isWebApp) where T : IHostApplicationBuilder
     {
         var environment = builder.Environment;
         var configuration = builder.Configuration;
@@ -22,6 +30,7 @@ internal static class IHostApplicationBuilderExtensions
             // add environment detectors
             resource.AddHostDetector();
             resource.AddProcessRuntimeDetector();
+            if (isWebApp) resource.AddDetector(new GitResourceDetector());
 
             // add detectors for Azure
             resource.AddAzureAppServiceDetector();
