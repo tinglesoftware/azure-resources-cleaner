@@ -247,6 +247,14 @@
                   "value": "true"
                 },
                 {
+                  "name": "GITHUB_SHA",
+                  "value": "#{GITHUB_SHA}#"
+                },
+                {
+                  "name": "GITHUB_REF_NAME",
+                  "value": "#{GITHUB_REF_NAME}#"
+                },
+                {
                   "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
                   "secretRef": "connection-strings-application-insights"
                 },

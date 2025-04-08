@@ -184,6 +184,9 @@ resource app 'Microsoft.App/containerApps@2023-05-01' = {
             { name: 'AZURE_CLIENT_ID', value: managedIdentity.properties.clientId } // Specifies the User-Assigned Managed Identity to use. Without this, the app attempt to use the system assigned one.
             { name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED', value: 'true' }
 
+            { name: 'GITHUB_SHA', value: '#{GITHUB_SHA}#' }
+            { name: 'GITHUB_REF_NAME', value: '#{GITHUB_REF_NAME}#' }
+
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', secretRef: 'connection-strings-application-insights' }
             { name: 'Authentication__ServiceHooks__Credentials__vsts', secretRef: 'notifications-password' }
 
