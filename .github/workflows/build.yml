@@ -197,13 +197,15 @@ jobs:
     - name: Build and push multi-arch image
       uses: docker/build-push-action@v6
       with:
-        file: Tingle.AzureCleaner/Dockerfile
+        context: ${{ github.workspace }}/drop/Tingle.AzureCleaner
+        file: Tingle.AzureCleaner/Dockerfile.CI
         platforms: linux/amd64,linux/arm64
         push: ${{ !startsWith(github.ref, 'refs/pull') }}
         cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
         cache-to: type=inline # sets BUILDKIT_INLINE_CACHE=1
         tags: ${{ env.DOCKER_TAGS }}
         labels: |
+          org.opencontainers.image.description="Cleanup tool for Azure resources for reviews"
           org.opencontainers.image.source=${{ github.repository }}
           org.opencontainers.image.version=${{ steps.gitversion.outputs.fullSemVer }}
           org.opencontainers.image.revision=${{ github.sha }}
