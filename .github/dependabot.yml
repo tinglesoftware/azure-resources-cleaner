@@ -5,47 +5,64 @@
 
 version: 2
 updates:
-  - package-ecosystem: "nuget" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: 'devcontainers' # See documentation for possible values
+    directory: '/' # Location of package manifests
     schedule:
-      interval: "monthly"
-      time: "02:00"
+      interval: 'monthly'
+      time: '02:00'
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: 'github-actions' # See documentation for possible values
+    directory: '/' # Location of package manifests
+    schedule:
+      interval: 'monthly'
+      time: '02:00'
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: 'dotnet-sdk'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+      time: '02:00'
+
+  - package-ecosystem: 'docker'
+    directories: ['**/*']
+    schedule:
+      interval: 'monthly'
+      time: '02:00'
+    groups:
+      dotnet-docker:
+        patterns: ['dotnet/*']
+
+  - package-ecosystem: 'nuget'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+      time: '02:00'
     groups:
       azure:
         patterns: ['Azure.*']
       command-line:
-        patterns: ["System.CommandLine*"]
+        patterns: ['System.CommandLine*']
       event-bus:
-        patterns: ["Tingle.EventBus.*"]
+        patterns: ['Tingle.EventBus.*']
       microsoft:
-        patterns: ["Microsoft.*"]
+        patterns: ['Microsoft.*']
         exclude-patterns:
-          - "Microsoft.TeamFoundationServer.*"
-          - "Microsoft.TeamFoundation.*"
-          - "Microsoft.VisualStudio.Azure.Containers.Tools.Targets"
+          - 'Microsoft.TeamFoundationServer.*'
+          - 'Microsoft.TeamFoundation.*'
+          - 'Microsoft.VisualStudio.Azure.Containers.Tools.Targets'
       opentelemetry:
         patterns: ['OpenTelemetry*']
       system:
-        patterns: ["System.*"]
+        patterns: ['System.*']
       team-foundation:
         patterns:
-          - "Microsoft.TeamFoundationServer.*"
-          - "Microsoft.TeamFoundation.*"
+          - 'Microsoft.TeamFoundationServer.*'
+          - 'Microsoft.TeamFoundation.*'
       tingle:
         patterns:
-          - "Tingle.AspNetCore.*"
-          - "Tingle.Extensions.*"
+          - 'Tingle.AspNetCore.*'
+          - 'Tingle.Extensions.*'
       xunit:
-        patterns: ["Xunit*"]
-  - package-ecosystem: "github-actions" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "monthly"
-      time: "02:00"
-    open-pull-requests-limit: 10
-  - package-ecosystem: "devcontainers" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "monthly"
-      time: "02:00"
-    open-pull-requests-limit: 10
+        patterns: ['Xunit*']
