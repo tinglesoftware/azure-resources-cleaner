@@ -2,10 +2,8 @@ name: Build
 
 on:
   push:
-    branches:
-    - main
-    tags:
-    - '*'
+    branches: [main]
+    tags: ['*']
     paths-ignore:
     - .devcontainer/**
     - .vscode/**
@@ -16,8 +14,7 @@ on:
     - .github/**
     - '!.github/workflows/build.yml'
   pull_request:
-    branches:
-    - main
+    branches: [main]
     paths-ignore:
     - .devcontainer/**
     - .vscode/**
@@ -138,7 +135,7 @@ jobs:
         NOTIFICATION_PASSWORD: ${{ secrets.NOTIFICATION_PASSWORD }}
         CLEANER_PROJECT_TOKEN: ${{ secrets.CLEANER_PROJECT_TOKEN }}
 
-    - name: Upload Artifact (drop)
+    - name: Upload Artifact (deploy)
       uses: actions/upload-artifact@v4
       with:
         path: deploy
