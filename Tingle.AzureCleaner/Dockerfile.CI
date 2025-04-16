@@ -3,7 +3,7 @@ USER app
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
-ENV AS_WEB_APP true
+ENV AS_WEB_APP=true
 
 COPY . .
 ENTRYPOINT ["dotnet", "Tingle.AzdoCleaner.dll"]
