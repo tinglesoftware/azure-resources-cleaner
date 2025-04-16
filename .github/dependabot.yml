@@ -1,7 +1,7 @@
 # To get started with Dependabot version updates, you'll need to specify which
 # package ecosystems to update and where the package manifests are located.
 # Please see the documentation for all configuration options:
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
 
 version: 2
 updates:
@@ -50,20 +50,16 @@ updates:
       microsoft:
         patterns: ['Microsoft.*']
         exclude-patterns:
-          - 'Microsoft.TeamFoundationServer.*'
-          - 'Microsoft.TeamFoundation.*'
+          - 'Microsoft.TeamFoundation*'
           - 'Microsoft.VisualStudio.Azure.Containers.Tools.Targets'
       opentelemetry:
         patterns: ['OpenTelemetry*']
       system:
         patterns: ['System.*']
       team-foundation:
-        patterns:
-          - 'Microsoft.TeamFoundationServer.*'
-          - 'Microsoft.TeamFoundation.*'
+        patterns: ['Microsoft.TeamFoundation*']
       tingle:
-        patterns:
-          - 'Tingle.AspNetCore.*'
-          - 'Tingle.Extensions.*'
+        patterns: ['Tingle.*']
+        exclude-patterns: ['Tingle.EventBus*']
       xunit:
         patterns: ['Xunit*']
