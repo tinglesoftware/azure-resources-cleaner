@@ -2,6 +2,7 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Tingle.Extensions.Primitives.Converters;
 
 namespace Tingle.AzureCleaner;
 
@@ -56,7 +57,7 @@ public class AzureDevOpsEventRepositoryProject
     public string? Url { get; set; }
 }
 
-[JsonConverter(typeof(JsonStringEnumMemberConverter))]
+[JsonConverter(typeof(JsonStringEnumMemberConverter<AzureDevOpsEventType>))]
 public enum AzureDevOpsEventType
 {
     [EnumMember(Value = "git.push")]
