@@ -56,6 +56,7 @@ updates:
         patterns: ['OpenTelemetry*']
       system:
         patterns: ['System.*']
+        exclude-patterns: ["System.CommandLine*"] # different team and cycle
       team-foundation:
         patterns: ['Microsoft.TeamFoundation*']
       tingle:
