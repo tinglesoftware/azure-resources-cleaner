@@ -43,8 +43,6 @@ updates:
     groups:
       azure:
         patterns: ['Azure.*']
-      command-line:
-        patterns: ['System.CommandLine*']
       event-bus:
         patterns: ['Tingle.EventBus*']
       microsoft:
