@@ -1,7 +1,6 @@
 using AspNetCore.Authentication.Basic;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using Tingle.AzureCleaner;
 
 var isWebApp = Host.CreateApplicationBuilder().Configuration.GetValue<bool>("AS_WEB_APP");
@@ -48,15 +47,17 @@ else
 
         ["Logging:LogLevel:Tingle.AzureCleaner"] = "Trace",
 
-        ["Logging:Console:FormatterName"] = "Tingle",
+        ["Logging:Console:FormatterName"] = "cli",
         ["Logging:Console:FormatterOptions:SingleLine"] = "True",
         ["Logging:Console:FormatterOptions:IncludeCategory"] = "False",
         ["Logging:Console:FormatterOptions:IncludeEventId"] = "False",
-        ["Logging:Console:FormatterOptions:IncludeScopes"] = "False",
         ["Logging:Console:FormatterOptions:TimestampFormat"] = "HH:mm:ss ",
     });
 
-    builder.Logging.AddConsoleFormatter<TingleConsoleFormatter, TingleConsoleOptions>();
+    // configure logging
+    builder.Logging.AddCliConsole();
+
+    // register services
     builder.Services.AddCleaner(builder.Configuration.GetSection("Cleaner"));
 
     // build and start the host
@@ -69,6 +70,7 @@ else
     var remoteUrlOption = new Option<string?>(name: "--remote-url", aliases: ["--remote"]) { Description = "Remote URL of the Azure DevOps repository.", };
     var projectUrlOption = new Option<string?>(name: "--project-url", aliases: ["--project"]) { Description = "Project URL. Overrides the remote URL when provided.", };
 
+    // prepare the root command
     var root = new RootCommand("Cleanup tool for Azure resources based on Azure DevOps PRs")
     {
         pullRequestIdOption,
