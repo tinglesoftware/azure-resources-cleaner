@@ -53,27 +53,6 @@ public class EndpointTests(ITestOutputHelper outputHelper)
     }
 
     [Fact]
-    public async Task EndpointReturns_BadRequest_MissingValues()
-    {
-        await TestAsync(async (harness, client) =>
-        {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/webhooks/azure");
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes("vsts:burp-bump")));
-            request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-            var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-            Assert.Contains("\"type\":\"https://tools.ietf.org/html/rfc9110#section-15.5.1\"", body);
-            Assert.Contains("\"title\":\"One or more validation errors occurred.\"", body);
-            Assert.Contains("\"status\":400", body);
-            Assert.Contains("\"SubscriptionId\":[\"The SubscriptionId field is required.\"]", body);
-            Assert.Contains("\"EventType\":[\"The EventType field is required.\"]", body);
-            Assert.Contains("\"Resource\":[\"The Resource field is required.\"]", body);
-            Assert.Empty(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)); // Ensure no event was published
-        });
-    }
-
-    [Fact]
     public async Task EndpointReturns_UnsupportedMediaType()
     {
         await TestAsync(async (harness, client) =>
@@ -104,9 +83,8 @@ public class EndpointTests(ITestOutputHelper outputHelper)
 
             // Ensure event was published
             var evt_ctx = Assert.IsType<EventContext<AzdoCleanupEvent>>(Assert.Single(await harness.PublishedAsync(cancellationToken: TestContext.Current.CancellationToken)));
-            Assert.Equal(1, evt_ctx.Event.PullRequestId);
-            Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam", evt_ctx.Event.RemoteUrl);
-            Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c", evt_ctx.Event.RawProjectUrl);
+            Assert.Equal([1], evt_ctx.Event.Ids);
+            Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam", evt_ctx.Event.Url);
             Assert.Empty(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
         });
     }

@@ -16,8 +16,7 @@ public class AzureCleanerTests(ITestOutputHelper outputHelper)
         var (cleaner, arp, dop) = CreateCleaner(["https://dev.azure.com/fabrikam/DefaultCollection;123456789"]);
 
         await cleaner.HandleAsync(ids: [1],
-                                  remoteUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam",
-                                  rawProjectUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c",
+                                  url: "https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam",
                                   cancellationToken: TestContext.Current.CancellationToken);
 
         var ctx1 = Assert.Single(arp.PurgeAsyncCalls);
