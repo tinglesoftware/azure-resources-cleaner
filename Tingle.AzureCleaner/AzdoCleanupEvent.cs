@@ -4,9 +4,8 @@ namespace Tingle.AzureCleaner;
 
 internal class AzdoCleanupEvent
 {
-    public required int PullRequestId { get; init; }
-    public required string RemoteUrl { get; init; }
-    public required string RawProjectUrl { get; init; }
+    public required List<int> Ids { get; init; }
+    public required string Url { get; init; }
 }
 
 internal class ProcessAzdoCleanupEventConsumer(AzureCleaner cleaner) : IEventConsumer<AzdoCleanupEvent>
@@ -14,9 +13,8 @@ internal class ProcessAzdoCleanupEventConsumer(AzureCleaner cleaner) : IEventCon
     public async Task ConsumeAsync(EventContext<AzdoCleanupEvent> context, CancellationToken cancellationToken)
     {
         var evt = context.Event;
-        await cleaner.HandleAsync(ids: [evt.PullRequestId],
-                                  remoteUrl: evt.RemoteUrl,
-                                  rawProjectUrl: evt.RawProjectUrl,
+        await cleaner.HandleAsync(ids: evt.Ids,
+                                  url: evt.Url,
                                   cancellationToken: cancellationToken);
     }
 }

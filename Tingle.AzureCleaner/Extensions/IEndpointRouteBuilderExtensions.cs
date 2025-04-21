@@ -35,13 +35,13 @@ internal static class IEndpointRouteBuilderExtensions
                 string[] targetStatuses = ["completed", "abandoned", "draft"];
                 if (targetStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
                 {
-                    var rawProjectUrl = resource.Repository?.Project?.Url ?? throw new InvalidOperationException("Project URL should not be null");
-                    var remoteUrl = resource.Repository?.RemoteUrl ?? throw new InvalidOperationException("RemoteUrl should not be null");
+                    var url = resource.Repository?.RemoteUrl
+                           ?? resource.Repository?.Project?.Url
+                           ?? throw new InvalidOperationException("RemoteUrl and Project URL should not both be null");
                     var evt = new AzdoCleanupEvent
                     {
-                        PullRequestId = id,
-                        RemoteUrl = remoteUrl,
-                        RawProjectUrl = rawProjectUrl,
+                        Ids = [id],
+                        Url = url,
                     };
                     // if the PR closes immediately after the resources are created they may not be removed
                     // adding a delay allows the changes in the cloud provider to have propagated

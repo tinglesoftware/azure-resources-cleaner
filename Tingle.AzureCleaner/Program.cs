@@ -67,8 +67,12 @@ else
     // prepare options
     var pullRequestIdOption = new Option<int>(name: "--pull-request", aliases: ["-p", "--pr", "--pull-request-id"]) { Description = "Identifier of the pull request.", Required = true, };
     var subscriptionsOption = new Option<string[]>(name: "--subscription", aliases: ["-s"]) { Description = "Name or ID of subscriptions allowed. If none are provided, all subscriptions are checked.", };
-    var remoteUrlOption = new Option<string?>(name: "--remote-url", aliases: ["--remote"]) { Description = "Remote URL of the Azure DevOps repository.", };
-    var projectUrlOption = new Option<string?>(name: "--project-url", aliases: ["--project"]) { Description = "Project URL. Overrides the remote URL when provided.", };
+    var urlOption = new Option<string?>(name: "--url", aliases: ["-u"])
+    {
+        Description = "Remote URL of the Azure DevOps repository or the project URL."
+                    + " Example: https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam"
+                    + " or https://dev.azure.com/fabrikam/DefaultCollection",
+    };
     var dryRunOption = new Option<bool>(name: "--dry-run") { Description = "Performs a trial run without making any changes. Outputs the actions that would be taken.", };
 
     // prepare the root command
@@ -76,8 +80,7 @@ else
     {
         pullRequestIdOption,
         subscriptionsOption,
-        remoteUrlOption,
-        projectUrlOption,
+        urlOption,
         dryRunOption,
     };
     root.Action = System.CommandLine.NamingConventionBinder.CommandHandler.Create(
@@ -85,15 +88,13 @@ else
         {
             var pullRequestId = parseResult.GetValue(pullRequestIdOption);
             var subscriptions = parseResult.GetValue(subscriptionsOption);
-            var remoteUrl = parseResult.GetValue(remoteUrlOption);
-            var projectUrl = parseResult.GetValue(projectUrlOption);
+            var url = parseResult.GetValue(urlOption);
             var dryRun = parseResult.GetValue(dryRunOption);
 
             var cleaner = host.Services.GetRequiredService<AzureCleaner>();
             await cleaner.HandleAsync(ids: [pullRequestId],
                                       subscriptions: subscriptions,
-                                      remoteUrl: remoteUrl,
-                                      rawProjectUrl: projectUrl,
+                                      url: url,
                                       dryRun: dryRun,
                                       cancellationToken: cancellationToken);
             return 0;

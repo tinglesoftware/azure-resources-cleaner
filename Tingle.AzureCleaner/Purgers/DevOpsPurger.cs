@@ -12,19 +12,11 @@ public class DevOpsPurger(IMemoryCache cache, ILogger<DevOpsPurger> logger)
 {
     public virtual async Task PurgeAsync(PurgeContext<DevOpsPurgeContextOptions> context, CancellationToken cancellationToken = default)
     {
-        // skip if we do not have any URLs
-        var (projects, remoteUrl, rawProjectUrl) = context.Resource;
-        if (remoteUrl is null && rawProjectUrl is null)
+        // skip if we do not have a URL or token
+        var (projects, rawUrl) = context.Resource;
+        if (rawUrl is null || !TryFindAzdoProject(projects, rawUrl, out var url, out var token))
         {
-            logger.LogTrace("No Azure DevOps URLs provided. Skipping ...");
-            return;
-        }
-
-        // skip if we do not have tokens configured
-        if (!TryFindAzdoProject(projects, rawProjectUrl, out var url, out var token)
-            && !TryFindAzdoProject(projects, remoteUrl, out url, out token))
-        {
-            logger.LogWarning("Project for '{ProjectUrl}' or '{RemoteUrl}' does not have a token configured.", rawProjectUrl, remoteUrl);
+            logger.LogWarning("Project for '{Url}' is not configured or does not have a token.", rawUrl);
             return;
         }
 
@@ -96,8 +88,7 @@ public class DevOpsPurger(IMemoryCache cache, ILogger<DevOpsPurger> logger)
 
 public record DevOpsPurgeContextOptions(
     IReadOnlyDictionary<string, string> Projects,
-    string? RemoteUrl,
-    string? RawProjectUrl)
+    string? Url)
 {
     public static IReadOnlyDictionary<string, string> MakeProjects(IReadOnlyList<string> projects)
         => projects.Select(e => e.Split(";")).ToDictionary(s => s[0], s => s[1]);
