@@ -13,6 +13,29 @@
     <PackageId>azure-resources-cleaner</PackageId>
     <UserSecretsId>e0d97303-f1d9-4a35-84ab-7df2862ec01e</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <EnableRequestDelegateGenerator>true</EnableRequestDelegateGenerator>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- <PublishTrimmed>true</PublishTrimmed> -->
+    <!-- <PublishAot>true</PublishAot> -->
+  </PropertyGroup>
+
+  <!-- Properties for PublishTrimmed -->
+  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' or '$(PublishAot)' == 'true'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>
+  </PropertyGroup>
+
+  <!-- Properties for PublishAot -->
+  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true' or '$(PublishAot)' == 'true'">
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <EventSourceSupport>false</EventSourceSupport>
+    <StripSymbols>true</StripSymbols>
   </PropertyGroup>
 
   <PropertyGroup>
