@@ -174,19 +174,9 @@ public class EndpointTests(ITestOutputHelper outputHelper)
 
     class ModifiedAzureCleaner(IMemoryCache cache, IOptions<AzureCleanerOptions> options, ILogger<AzureCleaner> logger) : AzureCleaner(cache, options, logger)
     {
-        public List<IReadOnlyCollection<string>> DeleteAzureResourcesAsyncCalls { get; } = [];
-        public List<(AzdoProjectUrl url, string? token, IReadOnlyCollection<string> possibleNames)> DeleteReviewAppsEnvironmentsAsyncCalls { get; } = [];
+        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, bool dryRun, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
 
-        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, CancellationToken cancellationToken = default)
-        {
-            DeleteAzureResourcesAsyncCalls.Add(possibleNames);
-            return Task.CompletedTask;
-        }
-
-        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
-        {
-            DeleteReviewAppsEnvironmentsAsyncCalls.Add((url, token, possibleNames));
-            return Task.CompletedTask;
-        }
+        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

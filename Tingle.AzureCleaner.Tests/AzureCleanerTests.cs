@@ -105,28 +105,30 @@ public class AzureCleanerTests
                                   remoteUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam",
                                   rawProjectUrl: "https://dev.azure.com/fabrikam/DefaultCollection/_apis/projects/6ce954b1-ce1f-45d1-b94d-e6bf2464ba2c",
                                   cancellationToken: TestContext.Current.CancellationToken);
-        var possibleNames1 = Assert.Single(cleaner.DeleteAzureResourcesAsyncCalls);
+        var (possibleNames1, dryRun1) = Assert.Single(cleaner.DeleteAzureResourcesAsyncCalls);
         Assert.Equal(["review-app-1", "ra-1", "ra1"], possibleNames1);
-        var (url, token, possibleNames2) = Assert.Single(cleaner.DeleteReviewAppsEnvironmentsAsyncCalls);
+        Assert.False(dryRun1);
+        var (url, token, possibleNames2, dryRun2) = Assert.Single(cleaner.DeleteReviewAppsEnvironmentsAsyncCalls);
         Assert.Equal("https://dev.azure.com/fabrikam/DefaultCollection", url);
         Assert.Equal("123456789", token);
         Assert.Equal(["review-app-1", "ra-1", "ra1"], possibleNames2);
+        Assert.False(dryRun2);
     }
 
     class ModifiedAzureCleaner(IMemoryCache cache, IOptions<AzureCleanerOptions> options, ILogger<AzureCleaner> logger) : AzureCleaner(cache, options, logger)
     {
-        public List<IReadOnlyCollection<string>> DeleteAzureResourcesAsyncCalls { get; } = [];
-        public List<(AzdoProjectUrl url, string? token, IReadOnlyCollection<string> possibleNames)> DeleteReviewAppsEnvironmentsAsyncCalls { get; } = [];
+        public List<(IReadOnlyCollection<string> possibleNames, bool dryRun)> DeleteAzureResourcesAsyncCalls { get; } = [];
+        public List<(AzdoProjectUrl url, string? token, IReadOnlyCollection<string> possibleNames, bool dryRun)> DeleteReviewAppsEnvironmentsAsyncCalls { get; } = [];
 
-        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, CancellationToken cancellationToken = default)
+        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, bool dryRun, CancellationToken cancellationToken = default)
         {
-            DeleteAzureResourcesAsyncCalls.Add(possibleNames);
+            DeleteAzureResourcesAsyncCalls.Add((possibleNames, dryRun));
             return Task.CompletedTask;
         }
 
-        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
         {
-            DeleteReviewAppsEnvironmentsAsyncCalls.Add((url, token, possibleNames));
+            DeleteReviewAppsEnvironmentsAsyncCalls.Add((url, token, possibleNames, dryRun));
             return Task.CompletedTask;
         }
     }

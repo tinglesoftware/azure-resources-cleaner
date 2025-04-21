@@ -47,6 +47,7 @@ internal class AzureCleaner
                                           IReadOnlyCollection<string>? subscriptionIdsOrNames = null,
                                           string? remoteUrl = null,
                                           string? rawProjectUrl = null,
+                                          bool dryRun = false,
                                           CancellationToken cancellationToken = default)
     {
         var possibleNames = MakePossibleNames([prId]);
@@ -56,7 +57,7 @@ internal class AzureCleaner
             if (TryFindAzdoProject(rawProjectUrl, out var url, out var token)
                 || TryFindAzdoProject(remoteUrl, out url, out token))
             {
-                await DeleteReviewAppsEnvironmentsAsync(url, token, possibleNames, cancellationToken);
+                await DeleteReviewAppsEnvironmentsAsync(url, token, possibleNames, dryRun, cancellationToken);
             }
             else
             {
@@ -65,7 +66,10 @@ internal class AzureCleaner
         }
 
         subscriptionIdsOrNames ??= options.Subscriptions;
-        await DeleteAzureResourcesAsync(possibleNames: possibleNames, subscriptionIdsOrNames: subscriptionIdsOrNames, cancellationToken: cancellationToken);
+        await DeleteAzureResourcesAsync(possibleNames: possibleNames,
+                                        subscriptionIdsOrNames: subscriptionIdsOrNames,
+                                        dryRun: dryRun,
+                                        cancellationToken: cancellationToken);
     }
 
     internal virtual bool TryFindAzdoProject(string? rawUrl, out AzdoProjectUrl url, [NotNullWhen(true)] out string? token)
@@ -78,7 +82,10 @@ internal class AzureCleaner
         return azdoProjects.TryGetValue(url, out token);
     }
 
-    protected virtual async Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, CancellationToken cancellationToken = default)
+    protected virtual async Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames,
+                                                           IReadOnlyCollection<string> subscriptionIdsOrNames,
+                                                           bool dryRun,
+                                                           CancellationToken cancellationToken = default)
     {
         var credential = new DefaultAzureCredential();
         var client = new ArmClient(credential);
@@ -101,66 +108,66 @@ internal class AzureCleaner
             // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
             if (options.AzureResourceGroups)
             {
-                await DeleteAzureResourceGroupsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureResourceGroupsAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureKubernetes)
             {
-                await DeleteAzureKubernetesNamespacesAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureKubernetesNamespacesAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureWebsites)
             {
-                await DeleteAzureWebsitesAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureWebsitesAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureStaticWebApps)
             {
-                await DeleteAzureStaticWebAppsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureStaticWebAppsAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureContainerApps)
             {
-                await DeleteAzureContainerAppsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureContainerAppsAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureContainerInstances)
             {
-                await DeleteAzureContainerInstancesAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureContainerInstancesAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureCosmosDB)
             {
-                await DeleteAzureCosmosDBAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureCosmosDBAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureMySql)
             {
-                await DeleteAzureMySqlAsync(sub, possibleNames, cancellationToken);
-                await DeleteAzureMySqlFlexibleAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureMySqlAsync(sub, possibleNames, dryRun, cancellationToken);
+                await DeleteAzureMySqlFlexibleAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzurePostgreSql)
             {
-                await DeleteAzurePostgreSqlAsync(sub, possibleNames, cancellationToken);
-                await DeleteAzurePostgreSqlFlexibleAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzurePostgreSqlAsync(sub, possibleNames, dryRun, cancellationToken);
+                await DeleteAzurePostgreSqlFlexibleAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.AzureSql)
             {
-                await DeleteAzureSqlAsync(sub, possibleNames, cancellationToken);
-                await DeleteAzureSqlManagedInstancesAsync(sub, possibleNames, cancellationToken);
-                await DeleteAzureSqlManagedInstancePoolsAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureSqlAsync(sub, possibleNames, dryRun, cancellationToken);
+                await DeleteAzureSqlManagedInstancesAsync(sub, possibleNames, dryRun, cancellationToken);
+                await DeleteAzureSqlManagedInstancePoolsAsync(sub, possibleNames, dryRun, cancellationToken);
             }
 
             if (options.UserAssignedIdentities)
             {
-                await DeleteAzureUserAssignedIdentitiesAsync(sub, possibleNames, cancellationToken);
+                await DeleteAzureUserAssignedIdentitiesAsync(sub, possibleNames, dryRun, cancellationToken);
             }
         }
     }
 
-    protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureResourceGroupsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var groups = sub.GetResourceGroups();
         await foreach (var group in groups)
@@ -168,12 +175,19 @@ internal class AzureCleaner
             var name = group.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting resource group '{ResourceGroupName}' at '{ResourceId}'", name, group.Data.Id);
-                await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting resource group '{ResourceGroupName}' at '{ResourceId}' (dry run)", name, group.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting resource group '{ResourceGroupName}' at '{ResourceId}'", name, group.Data.Id);
+                    await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
             }
         }
     }
-    protected virtual async Task DeleteAzureKubernetesNamespacesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureKubernetesNamespacesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var clusters = sub.GetContainerServiceManagedClustersAsync(cancellationToken);
         await foreach (var cluster in clusters)
@@ -182,8 +196,15 @@ internal class AzureCleaner
             var name = cluster.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting AKS cluster '{ClusterName}' at '{ResourceId}'", name, cluster.Data.Id);
-                await cluster.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting AKS cluster '{ClusterName}' at '{ResourceId}' (dry run)", name, cluster.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting AKS cluster '{ClusterName}' at '{ResourceId}'", name, cluster.Data.Id);
+                    await cluster.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
                 continue; // nothing more for the cluster
             }
 
@@ -205,8 +226,15 @@ internal class AzureCleaner
                 logger.LogDebug("Found {TargetCount} Kubernetes namespaces to delete.\r\n{TargetNamespaces}", found.Count, names);
                 foreach (var n in names)
                 {
-                    logger.LogInformation("Deleting Kubernetes namespace '{Namespace}'", n);
-                    await kubeClient.DeleteNamespaceAsync(name: n, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting Kubernetes namespace '{Namespace}' (dry run)", n);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting Kubernetes namespace '{Namespace}'", n);
+                        await kubeClient.DeleteNamespaceAsync(name: n, cancellationToken: cancellationToken);
+                    }
                 }
             }
             else
@@ -215,7 +243,7 @@ internal class AzureCleaner
             }
         }
     }
-    protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureWebsitesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var sites = sub.GetWebSitesAsync(cancellationToken);
         await foreach (var site in sites)
@@ -227,11 +255,18 @@ internal class AzureCleaner
                 var slotName = slot.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, slotName))
                 {
-                    logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}'", slotName, site.Data.Id);
-                    await slot.DeleteAsync(Azure.WaitUntil.Completed,
-                                           deleteMetrics: true,
-                                           deleteEmptyServerFarm: false,
-                                           cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}' (dry run)", slotName, site.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting slot '{SlotName}' in Website '{ResourceId}'", slotName, site.Data.Id);
+                        await slot.DeleteAsync(Azure.WaitUntil.Completed,
+                                               deleteMetrics: true,
+                                               deleteEmptyServerFarm: false,
+                                               cancellationToken: cancellationToken);
+                    }
                 }
             }
 
@@ -240,16 +275,22 @@ internal class AzureCleaner
             var planName = site.Data.AppServicePlanId.Name;
             if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, planName))
             {
-                //site.Data.AppServicePlanId
-                logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
-                await site.DeleteAsync(Azure.WaitUntil.Completed,
-                                       deleteMetrics: true,
-                                       deleteEmptyServerFarm: false,
-                                       cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}' (dry run)", name, site.Data.AppServicePlanId);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting website '{WebsiteName}' in Plan '{ResourceId}'", name, site.Data.AppServicePlanId);
+                    await site.DeleteAsync(Azure.WaitUntil.Completed,
+                                           deleteMetrics: true,
+                                           deleteEmptyServerFarm: false,
+                                           cancellationToken: cancellationToken);
+                }
             }
         }
     }
-    protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureStaticWebAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var sites = sub.GetStaticSitesAsync(cancellationToken);
         await foreach (var site in sites)
@@ -258,8 +299,15 @@ internal class AzureCleaner
             var name = site.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting static site '{WebsiteName}'", name);
-                await site.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting static site '{WebsiteName}' (dry run)", name);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting static site '{WebsiteName}'", name);
+                    await site.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
                 continue; // nothing more for the site
             }
 
@@ -276,13 +324,20 @@ internal class AzureCleaner
                 var buildName = build.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, buildName))
                 {
-                    logger.LogInformation("Deleting build '{BuildName}' in Static WebApp '{ResourceId}'", buildName, site.Data.Id);
-                    await build.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting build '{BuildName}' in Static WebApp '{ResourceId}' (dry run)", buildName, site.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting build '{BuildName}' in Static WebApp '{ResourceId}'", buildName, site.Data.Id);
+                        await build.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureContainerAppsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         // delete matching container apps (either the name or the environment indicates a reviewapp)
         var apps = sub.GetContainerAppsAsync(cancellationToken);
@@ -292,8 +347,15 @@ internal class AzureCleaner
             var envName = app.Data.EnvironmentId.Name;
             if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, envName))
             {
-                logger.LogInformation("Deleting app '{ContainerAppName}' in Environment '{ResourceId}'", name, app.Data.ManagedEnvironmentId);
-                await app.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting app '{ContainerAppName}' in Environment '{ResourceId}' (dry run)", name, app.Data.ManagedEnvironmentId);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting app '{ContainerAppName}' in Environment '{ResourceId}'", name, app.Data.ManagedEnvironmentId);
+                    await app.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
             }
         }
 
@@ -305,8 +367,15 @@ internal class AzureCleaner
             var envName = new Azure.Core.ResourceIdentifier(job.Data.EnvironmentId).Name;
             if (NameMatchesExpectedFormat(possibleNames, name) || NameMatchesExpectedFormat(possibleNames, envName))
             {
-                logger.LogInformation("Deleting job '{ContainerAppJobName}' in Environment '{ResourceId}'", name, job.Data.EnvironmentId);
-                await job.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting job '{ContainerAppJobName}' in Environment '{ResourceId}' (dry run)", name, job.Data.EnvironmentId);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting job '{ContainerAppJobName}' in Environment '{ResourceId}'", name, job.Data.EnvironmentId);
+                    await job.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
             }
         }
 
@@ -317,12 +386,19 @@ internal class AzureCleaner
             var name = env.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting environment '{EnvironmentName}' at '{ResourceId}'", name, env.Data.Id);
-                await env.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting environment '{EnvironmentName}' at '{ResourceId}' (dry run)", name, env.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting environment '{EnvironmentName}' at '{ResourceId}'", name, env.Data.Id);
+                    await env.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
             }
         }
     }
-    protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureContainerInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var groups = sub.GetContainerGroupsAsync(cancellationToken);
         await foreach (var group in groups)
@@ -330,12 +406,19 @@ internal class AzureCleaner
             var name = group.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting app '{ContainerGroupName}' at '{ResourceId}'", name, group.Data.Id);
-                await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting app '{ContainerGroupName}' at '{ResourceId}' (dry run)", name, group.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting app '{ContainerGroupName}' at '{ResourceId}'", name, group.Data.Id);
+                    await group.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
             }
         }
     }
-    protected virtual async Task DeleteAzureCosmosDBAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureCosmosDBAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var accounts = sub.GetCosmosDBAccountsAsync(cancellationToken);
         await foreach (var account in accounts)
@@ -344,8 +427,15 @@ internal class AzureCleaner
             var name = account.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting CosmosDB account '{AccountName}' at '{ResourceId}'", name, account.Data.Id);
-                await account.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting CosmosDB account '{AccountName}' at '{ResourceId}' (dry run)", name, account.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting CosmosDB account '{AccountName}' at '{ResourceId}'", name, account.Data.Id);
+                    await account.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
                 continue; // nothing more for the account
             }
 
@@ -359,8 +449,15 @@ internal class AzureCleaner
                     var databaseName = database.Data.Name;
                     if (NameMatchesExpectedFormat(possibleNames, databaseName))
                     {
-                        logger.LogInformation("Deleting CosmosDB for MongoDB database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        if (dryRun)
+                        {
+                            logger.LogInformation("Deleting CosmosDB for MongoDB database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Deleting CosmosDB for MongoDB database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                            await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
                         continue; // nothing more for the database
                     }
 
@@ -371,8 +468,15 @@ internal class AzureCleaner
                         var collectionName = collection.Data.Name;
                         if (NameMatchesExpectedFormat(possibleNames, collectionName))
                         {
-                            logger.LogInformation("Deleting CosmosDB for MongoDB database collection '{CollectionName}' at '{ResourceId}'", collectionName, database.Data.Id);
-                            await collection.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            if (dryRun)
+                            {
+                                logger.LogInformation("Deleting CosmosDB for MongoDB database collection '{CollectionName}' at '{ResourceId}' (dry run)", collectionName, database.Data.Id);
+                            }
+                            else
+                            {
+                                logger.LogInformation("Deleting CosmosDB for MongoDB database collection '{CollectionName}' at '{ResourceId}'", collectionName, database.Data.Id);
+                                await collection.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            }
                         }
                     }
                 }
@@ -389,8 +493,15 @@ internal class AzureCleaner
                     var keyspaceName = keyspace.Data.Name;
                     if (NameMatchesExpectedFormat(possibleNames, keyspaceName))
                     {
-                        logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace '{KeyspaceName}' at '{ResourceId}'", keyspaceName, keyspace.Data.Id);
-                        await keyspace.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        if (dryRun)
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace '{KeyspaceName}' at '{ResourceId}' (dry run)", keyspaceName, keyspace.Data.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace '{KeyspaceName}' at '{ResourceId}'", keyspaceName, keyspace.Data.Id);
+                            await keyspace.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
                         continue; // nothing more for the keyspace
                     }
 
@@ -401,8 +512,15 @@ internal class AzureCleaner
                         var tableName = table.Data.Name;
                         if (NameMatchesExpectedFormat(possibleNames, tableName))
                         {
-                            logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
-                            await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            if (dryRun)
+                            {
+                                logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace Table '{TableName}' at '{ResourceId}' (dry run)", tableName, table.Data.Id);
+                            }
+                            else
+                            {
+                                logger.LogInformation("Deleting CosmosDB for Cassandra Keyspace Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
+                                await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            }
                         }
                     }
                 }
@@ -417,8 +535,15 @@ internal class AzureCleaner
                     var tableName = table.Data.Name;
                     if (NameMatchesExpectedFormat(possibleNames, tableName))
                     {
-                        logger.LogInformation("Deleting CosmosDB Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
-                        await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        if (dryRun)
+                        {
+                            logger.LogInformation("Deleting CosmosDB Table '{TableName}' at '{ResourceId}' (dry run)", tableName, table.Data.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Deleting CosmosDB Table '{TableName}' at '{ResourceId}'", tableName, table.Data.Id);
+                            await table.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
                     }
                 }
             }
@@ -433,8 +558,15 @@ internal class AzureCleaner
                     var databaseName = database.Data.Name;
                     if (NameMatchesExpectedFormat(possibleNames, databaseName))
                     {
-                        logger.LogInformation("Deleting CosmosDB for Germlin database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        if (dryRun)
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Germlin database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Deleting CosmosDB for Germlin database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                            await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
                         continue; // nothing more for the database
                     }
 
@@ -445,8 +577,15 @@ internal class AzureCleaner
                         var graphName = graph.Data.Name;
                         if (NameMatchesExpectedFormat(possibleNames, graphName))
                         {
-                            logger.LogInformation("Deleting CosmosDB for Germlin database graph '{GraphName}' at '{ResourceId}'", graphName, graph.Data.Id);
-                            await graph.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            if (dryRun)
+                            {
+                                logger.LogInformation("Deleting CosmosDB for Germlin database graph '{GraphName}' at '{ResourceId}' (dry run)", graphName, graph.Data.Id);
+                            }
+                            else
+                            {
+                                logger.LogInformation("Deleting CosmosDB for Germlin database graph '{GraphName}' at '{ResourceId}'", graphName, graph.Data.Id);
+                                await graph.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            }
                         }
                     }
                 }
@@ -464,8 +603,15 @@ internal class AzureCleaner
                         var databaseName = database.Data.Name;
                         if (NameMatchesExpectedFormat(possibleNames, databaseName))
                         {
-                            logger.LogInformation("Deleting CosmosDB for SQL database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                            await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            if (dryRun)
+                            {
+                                logger.LogInformation("Deleting CosmosDB for SQL database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                            }
+                            else
+                            {
+                                logger.LogInformation("Deleting CosmosDB for SQL database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                                await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                            }
                             continue; // nothing more for the database
                         }
 
@@ -476,8 +622,15 @@ internal class AzureCleaner
                             var containerName = container.Data.Name;
                             if (NameMatchesExpectedFormat(possibleNames, containerName))
                             {
-                                logger.LogInformation("Deleting CosmosDB for SQL database container '{ContainerName}' at '{ResourceId}'", containerName, container.Data.Id);
-                                await container.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                                if (dryRun)
+                                {
+                                    logger.LogInformation("Deleting CosmosDB for SQL database container '{ContainerName}' at '{ResourceId}' (dry run)", containerName, container.Data.Id);
+                                }
+                                else
+                                {
+                                    logger.LogInformation("Deleting CosmosDB for SQL database container '{ContainerName}' at '{ResourceId}'", containerName, container.Data.Id);
+                                    await container.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                                }
                             }
                         }
                     }
@@ -485,7 +638,7 @@ internal class AzureCleaner
             }
         }
     }
-    protected virtual async Task DeleteAzureMySqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureMySqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var servers = sub.GetMySqlServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
@@ -500,13 +653,27 @@ internal class AzureCleaner
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
-                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}' (dry run)", name, server.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                    await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the server
             }
 
@@ -517,13 +684,20 @@ internal class AzureCleaner
                 var databaseName = database.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzureMySqlFlexibleAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureMySqlFlexibleAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var servers = sub.GetMySqlFlexibleServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
@@ -538,13 +712,27 @@ internal class AzureCleaner
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
-                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}' (dry run)", name, server.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting MySQL Server '{MySqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                    await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the server
             }
 
@@ -555,13 +743,20 @@ internal class AzureCleaner
                 var databaseName = database.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzurePostgreSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzurePostgreSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var servers = sub.GetPostgreSqlServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
@@ -576,13 +771,27 @@ internal class AzureCleaner
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting PostgreSQL Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
-                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting PostgreSQL Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting PostgreSQL Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                    await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the server
             }
 
@@ -593,13 +802,20 @@ internal class AzureCleaner
                 var databaseName = database.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzurePostgreSqlFlexibleAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzurePostgreSqlFlexibleAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var servers = sub.GetPostgreSqlFlexibleServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
@@ -614,13 +830,27 @@ internal class AzureCleaner
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting PostgreSQL Flexible Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
-                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting PostgreSQL Flexible Server '{PostgreSqlServerName}' at '{ResourceId}' (dry run)", name, server.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting PostgreSQL Flexible Server '{PostgreSqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                    await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the server
             }
 
@@ -631,13 +861,20 @@ internal class AzureCleaner
                 var databaseName = database.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureSqlAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var servers = sub.GetSqlServersAsync(cancellationToken: cancellationToken);
         await foreach (var server in servers)
@@ -652,13 +889,27 @@ internal class AzureCleaner
                 await foreach (var database in serverDatabases)
                 {
                     var databaseName = database.Data.Name;
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting SQL Server '{SqlServerName}' at '{ResourceId}'", name, server.Data.Id);
-                await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting SQL Server '{SqlServerName}' at '{ResourceId}' (dry run)", name, server.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting SQL Server '{SqlServerName}' at '{ResourceId}'", name, server.Data.Id);
+                    await server.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the server
             }
 
@@ -675,13 +926,27 @@ internal class AzureCleaner
                     await foreach (var database in poolDatabases)
                     {
                         var databaseName = database.Data.Name;
-                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        if (dryRun)
+                        {
+                            logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                            await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                        }
                     }
 
                     // delete the actual pool
-                    logger.LogInformation("Deleting elastic pool '{ElasticPoolName}' at '{ResourceId}'", poolName, pool.Data.Id);
-                    await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting elastic pool '{ElasticPoolName}' at '{ResourceId}' (dry run)", poolName, pool.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting elastic pool '{ElasticPoolName}' at '{ResourceId}'", poolName, pool.Data.Id);
+                        await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
 
@@ -692,21 +957,28 @@ internal class AzureCleaner
                 var databaseName = database.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, databaseName))
                 {
-                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                        await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
     }
-    protected virtual async Task DeleteAzureSqlManagedInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureSqlManagedInstancesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var instances = sub.GetManagedInstancesAsync(cancellationToken: cancellationToken);
         await foreach (var instance in instances)
         {
-            await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken: cancellationToken);
+            await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, dryRun, cancellationToken);
         }
     }
-    protected virtual async Task DeleteAzureSqlManagedInstancePoolsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureSqlManagedInstancePoolsAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var pools = sub.GetInstancePoolsAsync(cancellationToken);
         await foreach (var pool in pools)
@@ -719,12 +991,19 @@ internal class AzureCleaner
                 var poolInstances = pool.GetManagedInstancesAsync(cancellationToken: cancellationToken);
                 await foreach (var instance in poolInstances)
                 {
-                    await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken);
+                    await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, dryRun, cancellationToken);
                 }
 
                 // delete the actual server
-                logger.LogInformation("Deleting SQL Managed Instance Pool '{InstancePoolName}' at '{ResourceId}'", name, pool.Data.Id);
-                await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting SQL Managed Instance Pool '{InstancePoolName}' at '{ResourceId}' (dry run)", name, pool.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting SQL Managed Instance Pool '{InstancePoolName}' at '{ResourceId}'", name, pool.Data.Id);
+                    await pool.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
                 continue; // nothing more for the pool
             }
 
@@ -732,11 +1011,11 @@ internal class AzureCleaner
             var instances = pool.GetManagedInstancesAsync(cancellationToken: cancellationToken);
             await foreach (var instance in instances)
             {
-                await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, cancellationToken);
+                await DeleteAzureSqlManagedInstanceAsync(instance, possibleNames, dryRun, cancellationToken);
             }
         }
     }
-    protected virtual async Task DeleteAzureSqlManagedInstanceAsync(ManagedInstanceResource instance, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureSqlManagedInstanceAsync(ManagedInstanceResource instance, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         // delete matching instances
         var name = instance.Data.Name;
@@ -748,13 +1027,27 @@ internal class AzureCleaner
             await foreach (var database in instanceDatabases)
             {
                 var databaseName = database.Data.Name;
-                logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
             }
 
             // delete the actual instance
-            logger.LogInformation("Deleting SQL Managed Instance '{InstanceName}' at '{ResourceId}'", name, instance.Data.Id);
-            await instance.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+            if (dryRun)
+            {
+                logger.LogInformation("Deleting SQL Managed Instance '{InstanceName}' at '{ResourceId}' (dry run)", name, instance.Data.Id);
+            }
+            else
+            {
+                logger.LogInformation("Deleting SQL Managed Instance '{InstanceName}' at '{ResourceId}'", name, instance.Data.Id);
+                await instance.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+            }
             return; // nothing more for the instance
         }
 
@@ -765,12 +1058,19 @@ internal class AzureCleaner
             var databaseName = database.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, databaseName))
             {
-                logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
-                await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}' (dry run)", databaseName, database.Data.Id);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting database '{DatabaseName}' at '{ResourceId}'", databaseName, database.Data.Id);
+                    await database.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken: cancellationToken);
+                }
             }
         }
     }
-    protected virtual async Task DeleteAzureUserAssignedIdentitiesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteAzureUserAssignedIdentitiesAsync(SubscriptionResource sub, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var identities = sub.GetUserAssignedIdentitiesAsync(cancellationToken);
         await foreach (var identity in identities)
@@ -779,8 +1079,15 @@ internal class AzureCleaner
             var name = identity.Data.Name;
             if (NameMatchesExpectedFormat(possibleNames, name))
             {
-                logger.LogInformation("Deleting UserAssigned managed identity '{IdentityName}'", name);
-                await identity.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                if (dryRun)
+                {
+                    logger.LogInformation("Deleting UserAssigned managed identity '{IdentityName}' (dry run)", name);
+                }
+                else
+                {
+                    logger.LogInformation("Deleting UserAssigned managed identity '{IdentityName}'", name);
+                    await identity.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                }
                 continue; // nothing more for the site
             }
 
@@ -791,14 +1098,21 @@ internal class AzureCleaner
                 var credentialsName = credential.Data.Name;
                 if (NameMatchesExpectedFormat(possibleNames, credentialsName))
                 {
-                    logger.LogInformation("Deleting federated credentials '{CredentialsName}' in UserAssigned managed identity '{ResourceId}'", credentialsName, identity.Data.Id);
-                    await credential.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting federated credentials '{CredentialsName}' in UserAssigned managed identity '{ResourceId}' (dry run)", credentialsName, identity.Data.Id);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting federated credentials '{CredentialsName}' in UserAssigned managed identity '{ResourceId}'", credentialsName, identity.Data.Id);
+                        await credential.DeleteAsync(Azure.WaitUntil.Completed, cancellationToken);
+                    }
                 }
             }
         }
     }
 
-    protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, CancellationToken cancellationToken)
+    protected virtual async Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken)
     {
         var connection = CreateVssConnection(url, token);
         var client = await connection.GetClientAsync<TaskAgentHttpClient>(cancellationToken);
@@ -821,8 +1135,15 @@ internal class AzureCleaner
             {
                 if (NameMatchesExpectedFormat(possibleNames, resource.Name))
                 {
-                    logger.LogInformation("Deleting resource '{EnvironmentName}/{ResourceName}' in '{ProjectUrl}'", environment.Name, resource.Name, url);
-                    await client.DeleteKubernetesResourceAsync(url.ProjectIdOrName, environment.Id, resource.Id, cancellationToken: cancellationToken);
+                    if (dryRun)
+                    {
+                        logger.LogInformation("Deleting resource '{EnvironmentName}/{ResourceName}' in '{ProjectUrl}' (dry run)", environment.Name, resource.Name, url);
+                    }
+                    else
+                    {
+                        logger.LogInformation("Deleting resource '{EnvironmentName}/{ResourceName}' in '{ProjectUrl}'", environment.Name, resource.Name, url);
+                        await client.DeleteKubernetesResourceAsync(url.ProjectIdOrName, environment.Id, resource.Id, cancellationToken: cancellationToken);
+                    }
                 }
             }
         }
