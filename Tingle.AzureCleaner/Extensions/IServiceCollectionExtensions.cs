@@ -1,5 +1,6 @@
 ﻿using Azure.Identity;
 using Tingle.AzureCleaner;
+using Tingle.AzureCleaner.Purgers;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +12,9 @@ internal static class IServiceCollectionExtensions
     {
         services.AddMemoryCache();
         services.Configure<AzureCleanerOptions>(configuration);
-        services.AddSingleton<AzureCleaner>();
+        services.AddScoped<AzureCleaner>();
+        services.AddScoped<AzureResourcesPurger>();
+        services.AddScoped<DevOpsPurger>();
 
         return services;
     }

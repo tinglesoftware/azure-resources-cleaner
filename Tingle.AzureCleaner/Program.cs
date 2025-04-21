@@ -51,7 +51,7 @@ else
         ["Logging:Console:FormatterOptions:SingleLine"] = "True",
         ["Logging:Console:FormatterOptions:IncludeCategory"] = "False",
         ["Logging:Console:FormatterOptions:IncludeEventId"] = "False",
-        ["Logging:Console:FormatterOptions:TimestampFormat"] = "HH:mm:ss ",
+        ["Logging:Console:FormatterOptions:TimestampFormat"] = "yyyy-MM-dd HH:mm:ss ",
     });
 
     // configure logging
@@ -66,7 +66,7 @@ else
 
     // prepare options
     var pullRequestIdOption = new Option<int>(name: "--pull-request", aliases: ["-p", "--pr", "--pull-request-id"]) { Description = "Identifier of the pull request.", Required = true, };
-    var subscriptionOption = new Option<string[]>(name: "--subscription", aliases: ["-s"]) { Description = "Name or ID of subscriptions allowed. If none are provided, all subscriptions are checked.", };
+    var subscriptionsOption = new Option<string[]>(name: "--subscription", aliases: ["-s"]) { Description = "Name or ID of subscriptions allowed. If none are provided, all subscriptions are checked.", };
     var remoteUrlOption = new Option<string?>(name: "--remote-url", aliases: ["--remote"]) { Description = "Remote URL of the Azure DevOps repository.", };
     var projectUrlOption = new Option<string?>(name: "--project-url", aliases: ["--project"]) { Description = "Project URL. Overrides the remote URL when provided.", };
     var dryRunOption = new Option<bool>(name: "--dry-run") { Description = "Performs a trial run without making any changes. Outputs the actions that would be taken.", };
@@ -75,7 +75,7 @@ else
     var root = new RootCommand("Cleanup tool for Azure resources based on Azure DevOps PRs")
     {
         pullRequestIdOption,
-        subscriptionOption,
+        subscriptionsOption,
         remoteUrlOption,
         projectUrlOption,
         dryRunOption,
@@ -84,14 +84,14 @@ else
         async (ParseResult parseResult, CancellationToken cancellationToken) =>
         {
             var pullRequestId = parseResult.GetValue(pullRequestIdOption);
-            var subscription = parseResult.GetValue(subscriptionOption);
+            var subscriptions = parseResult.GetValue(subscriptionsOption);
             var remoteUrl = parseResult.GetValue(remoteUrlOption);
             var projectUrl = parseResult.GetValue(projectUrlOption);
             var dryRun = parseResult.GetValue(dryRunOption);
 
             var cleaner = host.Services.GetRequiredService<AzureCleaner>();
-            await cleaner.HandleAsync(prId: pullRequestId,
-                                      subscriptionIdsOrNames: subscription,
+            await cleaner.HandleAsync(ids: [pullRequestId],
+                                      subscriptions: subscriptions,
                                       remoteUrl: remoteUrl,
                                       rawProjectUrl: projectUrl,
                                       dryRun: dryRun,
