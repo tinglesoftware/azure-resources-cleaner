@@ -3,6 +3,7 @@ using MiniValidation;
 using System.Text.Json;
 using Tingle.AzureCleaner;
 using Tingle.EventBus;
+using SC = Tingle.AzureCleaner.AzureCleanerSerializerContext;
 
 namespace Microsoft.AspNetCore.Builder;
 
@@ -23,7 +24,7 @@ internal static class IEndpointRouteBuilderExtensions
 
             if (type is AzureDevOpsEventType.GitPullRequestUpdated)
             {
-                var resource = JsonSerializer.Deserialize<AzureDevOpsEventPullRequestResource>(model.Resource)!;
+                var resource = JsonSerializer.Deserialize(model.Resource, SC.Default.AzureDevOpsEventPullRequestResource)!;
                 var id = resource.PullRequestId;
                 var status = resource.Status;
 

@@ -7,8 +7,13 @@ var isWebApp = Host.CreateApplicationBuilder().Configuration.GetValue<bool>("AS_
 
 if (isWebApp)
 {
-    var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateSlimBuilder(args);
     builder.AddOpenTelemetry(true);
+
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.TypeInfoResolverChain.Insert(0, AzureCleanerSerializerContext.Default);
+    });
 
     builder.Services.AddCleaner(builder.Configuration.GetSection("Cleaner"))
                     .AddEventBus(builder.Configuration)

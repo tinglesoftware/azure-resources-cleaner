@@ -22,10 +22,10 @@ internal static class IServiceCollectionExtensions
     public static IServiceCollection AddEventBus(this IServiceCollection services, IConfiguration configuration, Action<EventBusBuilder>? setupAction = null)
     {
         var selectedTransport = configuration.GetValue<EventBusTransportKind?>("EventBus:SelectedTransport");
-        services.AddEventBus(builder =>
+        services.AddSlimEventBus(builder =>
         {
             // Setup consumers
-            builder.AddConsumer<ProcessAzdoCleanupEventConsumer>();
+            builder.AddConsumer<AzdoCleanupEvent, ProcessAzdoCleanupEventConsumer>();
 
             // Setup transports
             var credential = new DefaultAzureCredential();
