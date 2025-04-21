@@ -84,8 +84,8 @@
     <PackageReference Include="Tingle.EventBus.Transports.Azure.QueueStorage" Version="0.24.0" />
     <PackageReference Include="Tingle.EventBus.Transports.Azure.ServiceBus" Version="0.24.0" />
     <PackageReference Include="Tingle.EventBus.Transports.InMemory" Version="0.24.0" />
-    <PackageReference Include="Tingle.Extensions.Logging" Version="5.1.1" />
-    <PackageReference Include="Tingle.Extensions.Primitives" Version="5.1.1" />
+    <PackageReference Include="Tingle.Extensions.Logging" Version="5.2.0" />
+    <PackageReference Include="Tingle.Extensions.Primitives" Version="5.2.0" />
   </ItemGroup>
 
   <ItemGroup>
