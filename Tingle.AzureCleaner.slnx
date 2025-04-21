@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Tingle.AzureCleaner/Tingle.AzureCleaner.csproj" />
+  <Project Path="Tingle.AzureCleaner.Tests/Tingle.AzureCleaner.Tests.csproj" />
+</Solution>
