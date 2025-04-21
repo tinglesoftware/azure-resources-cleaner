@@ -73,6 +73,7 @@ else
                     + " Example: https://dev.azure.com/fabrikam/DefaultCollection/_git/Fabrikam"
                     + " or https://dev.azure.com/fabrikam/DefaultCollection",
     };
+    var tokenOption = new Option<string>(name: "--token", aliases: ["-t"]) { Description = "Token for accessing Azure DevOps", };
     var dryRunOption = new Option<bool>(name: "--dry-run") { Description = "Performs a trial run without making any changes. Outputs the actions that would be taken.", };
 
     // prepare the root command
@@ -81,19 +82,38 @@ else
         pullRequestIdOption,
         subscriptionsOption,
         urlOption,
+        tokenOption,
         dryRunOption,
     };
     root.Action = System.CommandLine.NamingConventionBinder.CommandHandler.Create(
         async (ParseResult parseResult, CancellationToken cancellationToken) =>
         {
+            using var scope = host.Services.CreateScope();
+            var provider = scope.ServiceProvider;
+
             var pullRequestId = parseResult.GetValue(pullRequestIdOption);
             var subscriptions = parseResult.GetValue(subscriptionsOption);
             var url = parseResult.GetValue(urlOption);
+            var token = parseResult.GetValue(tokenOption);
             var dryRun = parseResult.GetValue(dryRunOption);
 
-            var cleaner = host.Services.GetRequiredService<AzureCleaner>();
+            // prepare projects
+            var projects = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(Tingle.AzureCleaner));
+                    logger.LogError("When then url is supplied the token must also be provided");
+                    return -1;
+                }
+                projects[url] = token;
+            }
+
+            var cleaner = provider.GetRequiredService<AzureCleaner>();
             await cleaner.HandleAsync(ids: [pullRequestId],
                                       subscriptions: subscriptions,
+                                      projects: projects,
                                       url: url,
                                       dryRun: dryRun,
                                       cancellationToken: cancellationToken);

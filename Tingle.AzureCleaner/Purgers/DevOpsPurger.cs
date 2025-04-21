@@ -12,8 +12,15 @@ public class DevOpsPurger(IMemoryCache cache, ILogger<DevOpsPurger> logger)
 {
     public virtual async Task PurgeAsync(PurgeContext<DevOpsPurgeContextOptions> context, CancellationToken cancellationToken = default)
     {
-        // skip if we do not have a URL or token
+        // skip if we do not have a URL
         var (projects, rawUrl) = context.Resource;
+        if (rawUrl is null)
+        {
+            logger.LogTrace("No Azure DevOps URLs provided. Skipping ...");
+            return;
+        }
+
+        // skip if we do not have a token configured
         if (rawUrl is null || !TryFindAzdoProject(projects, rawUrl, out var url, out var token))
         {
             logger.LogWarning("Project for '{Url}' is not configured or does not have a token.", rawUrl);

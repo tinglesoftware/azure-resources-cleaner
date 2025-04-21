@@ -9,6 +9,7 @@ internal class AzureCleaner(DevOpsPurger devOpsPurger, AzureResourcesPurger azur
 
     public virtual async Task HandleAsync(IList<int> ids,
                                           IList<string>? subscriptions = null,
+                                          IReadOnlyDictionary<string, string>? projects = null,
                                           string? url = null,
                                           bool dryRun = false,
                                           CancellationToken cancellationToken = default)
@@ -16,9 +17,9 @@ internal class AzureCleaner(DevOpsPurger devOpsPurger, AzureResourcesPurger azur
         var possibleNames = PurgeContext.MakePossibleNames(ids);
         var context = new PurgeContext<object>(new { }, possibleNames, dryRun);
 
-        var azdoProjects = DevOpsPurgeContextOptions.MakeProjects(options.AzdoProjects);
+        projects ??= DevOpsPurgeContextOptions.MakeProjects(options.AzdoProjects);
         await devOpsPurger.PurgeAsync(
-            context.Convert(new DevOpsPurgeContextOptions(azdoProjects, url)),
+            context.Convert(new DevOpsPurgeContextOptions(projects, url)),
             cancellationToken);
 
         subscriptions ??= options.Subscriptions;
