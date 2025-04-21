@@ -3,7 +3,7 @@
   "profiles": {
     "Tingle.AzureCleaner": {
       "commandName": "Project",
-      //"commandLineArgs": "Tingle.AzureCleaner --pr 3001 --subscription DEPENDABOT",
+      //"commandLineArgs": "Tingle.AzureCleaner --pr 3001 --subscription DEPENDABOT --dry-run",
       "launchBrowser": true,
       "launchUrl": "health",
       "environmentVariables": {
@@ -20,6 +20,7 @@
       "environmentVariables": {
         "ASPNETCORE_HTTPS_PORTS": "8081",
         "ASPNETCORE_HTTP_PORTS": "8080",
+        "DOTNET_ENVIRONMENT": "Development",
         "AS_WEB_APP": "true"
       },
       "publishAllPorts": true,

@@ -14,7 +14,7 @@ internal class ProcessAzdoCleanupEventConsumer(AzureCleaner cleaner) : IEventCon
     public async Task ConsumeAsync(EventContext<AzdoCleanupEvent> context, CancellationToken cancellationToken)
     {
         var evt = context.Event;
-        await cleaner.HandleAsync(prId: evt.PullRequestId,
+        await cleaner.HandleAsync(ids: [evt.PullRequestId],
                                   remoteUrl: evt.RemoteUrl,
                                   rawProjectUrl: evt.RawProjectUrl,
                                   cancellationToken: cancellationToken);

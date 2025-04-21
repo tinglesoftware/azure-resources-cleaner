@@ -24,7 +24,7 @@ internal static class IEndpointRouteBuilderExtensions
             if (type is AzureDevOpsEventType.GitPullRequestUpdated)
             {
                 var resource = JsonSerializer.Deserialize<AzureDevOpsEventPullRequestResource>(model.Resource)!;
-                var prId = resource.PullRequestId;
+                var id = resource.PullRequestId;
                 var status = resource.Status;
 
                 /*
@@ -39,7 +39,7 @@ internal static class IEndpointRouteBuilderExtensions
                     var remoteUrl = resource.Repository?.RemoteUrl ?? throw new InvalidOperationException("RemoteUrl should not be null");
                     var evt = new AzdoCleanupEvent
                     {
-                        PullRequestId = prId,
+                        PullRequestId = id,
                         RemoteUrl = remoteUrl,
                         RawProjectUrl = rawProjectUrl,
                     };
@@ -50,7 +50,7 @@ internal static class IEndpointRouteBuilderExtensions
                 }
                 else
                 {
-                    logger.LogTrace("PR {PullRequestId} was updated but the status didn't match. Status '{Status}'", prId, status);
+                    logger.LogTrace("PR {PullRequestId} was updated but the status didn't match. Status '{Status}'", id, status);
                 }
             }
             else

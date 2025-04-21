@@ -6,12 +6,11 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System.Net;
 using System.Text;
+using Tingle.AzureCleaner.Purgers;
 using Tingle.EventBus;
 using Tingle.EventBus.Transports.InMemory;
-using Xunit;
 
 namespace Tingle.AzureCleaner.Tests;
 
@@ -114,7 +113,6 @@ public class EndpointTests(ITestOutputHelper outputHelper)
 
     private async Task TestAsync(Func<InMemoryTestHarness, HttpClient, Task> logic)
     {
-        // Arrange
         var builder = new WebHostBuilder()
             .ConfigureLogging(builder => builder.AddXUnit(outputHelper))
             .ConfigureAppConfiguration(builder =>
@@ -130,7 +128,8 @@ public class EndpointTests(ITestOutputHelper outputHelper)
                 var configuration = context.Configuration;
                 services.AddRouting();
                 services.AddCleaner(configuration.GetSection("Cleaner"));
-                services.AddSingleton<AzureCleaner, ModifiedAzureCleaner>();
+                services.AddScoped<AzureResourcesPurger, ModifiedAzureResourcesPurger>();
+                services.AddScoped<DevOpsPurger, ModifiedDevOpsPurger>();
                 services.AddEventBus(builder => builder.AddInMemoryTransport().AddInMemoryTestHarness());
 
                 services.AddAuthentication()
@@ -172,11 +171,14 @@ public class EndpointTests(ITestOutputHelper outputHelper)
         }
     }
 
-    class ModifiedAzureCleaner(IMemoryCache cache, IOptions<AzureCleanerOptions> options, ILogger<AzureCleaner> logger) : AzureCleaner(cache, options, logger)
+    class ModifiedAzureResourcesPurger(ILoggerFactory loggerFactory) : AzureResourcesPurger(loggerFactory)
     {
-        protected override Task DeleteAzureResourcesAsync(IReadOnlyCollection<string> possibleNames, IReadOnlyCollection<string> subscriptionIdsOrNames, bool dryRun, CancellationToken cancellationToken = default)
+        public override Task PurgeAsync(PurgeContext<AzureResourcesPurgeContextOptions> context, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-
-        protected override Task DeleteReviewAppsEnvironmentsAsync(AzdoProjectUrl url, string token, IReadOnlyCollection<string> possibleNames, bool dryRun, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
+    class ModifiedDevOpsPurger(IMemoryCache cache, ILogger<DevOpsPurger> logger) : DevOpsPurger(cache, logger)
+    {
+        public override Task PurgeAsync(PurgeContext<DevOpsPurgeContextOptions> context, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }
