@@ -69,6 +69,7 @@ else
     var subscriptionOption = new Option<string[]>(name: "--subscription", aliases: ["-s"]) { Description = "Name or ID of subscriptions allowed. If none are provided, all subscriptions are checked.", };
     var remoteUrlOption = new Option<string?>(name: "--remote-url", aliases: ["--remote"]) { Description = "Remote URL of the Azure DevOps repository.", };
     var projectUrlOption = new Option<string?>(name: "--project-url", aliases: ["--project"]) { Description = "Project URL. Overrides the remote URL when provided.", };
+    var dryRunOption = new Option<bool>(name: "--dry-run") { Description = "Performs a trial run without making any changes. Outputs the actions that would be taken.", };
 
     // prepare the root command
     var root = new RootCommand("Cleanup tool for Azure resources based on Azure DevOps PRs")
@@ -77,6 +78,7 @@ else
         subscriptionOption,
         remoteUrlOption,
         projectUrlOption,
+        dryRunOption,
     };
     root.Action = System.CommandLine.NamingConventionBinder.CommandHandler.Create(
         async (ParseResult parseResult, CancellationToken cancellationToken) =>
@@ -85,12 +87,14 @@ else
             var subscription = parseResult.GetValue(subscriptionOption);
             var remoteUrl = parseResult.GetValue(remoteUrlOption);
             var projectUrl = parseResult.GetValue(projectUrlOption);
+            var dryRun = parseResult.GetValue(dryRunOption);
 
             var cleaner = host.Services.GetRequiredService<AzureCleaner>();
             await cleaner.HandleAsync(prId: pullRequestId,
                                       subscriptionIdsOrNames: subscription,
                                       remoteUrl: remoteUrl,
                                       rawProjectUrl: projectUrl,
+                                      dryRun: dryRun,
                                       cancellationToken: cancellationToken);
             return 0;
         });
