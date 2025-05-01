@@ -76,7 +76,7 @@
     <PackageReference Include="Azure.ResourceManager.MySql" Version="1.1.1" />
     <PackageReference Include="Azure.ResourceManager.PostgreSql" Version="1.2.0" />
     <PackageReference Include="Azure.ResourceManager.Sql" Version="1.2.1" />
-    <PackageReference Include="KubernetesClient" Version="16.0.2" />
+    <PackageReference Include="KubernetesClient" Version="16.0.7" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="Microsoft.TeamFoundation.DistributedTask.WebApi" Version="19.225.1" />
     <PackageReference Include="MiniValidation" Version="0.9.2" />
