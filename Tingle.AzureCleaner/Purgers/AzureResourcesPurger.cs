@@ -42,6 +42,7 @@ public class AzureResourcesPurger(ILoggerFactory loggerFactory)
 
             // create context and work through each purger
             var ctx = context.Convert(sub);
+            logger.LogDebug("Searching in subscription '{SubscriptionName}' ...", sub.Data.DisplayName); // no subscription ID for security reasons
             foreach (var purger in purgers)
             {
                 await purger.PurgeAsync(ctx, cancellationToken);
