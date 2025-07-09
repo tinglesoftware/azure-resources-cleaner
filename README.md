@@ -78,6 +78,11 @@ jobs:
     name: 🗑️ Remove
 
     steps:
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.x'
+
     - name: Azure Login
       uses: azure/login@v2
       with:
