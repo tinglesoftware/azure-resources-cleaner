@@ -13,6 +13,19 @@ public class AzureResourcesPurger(ILoggerFactory loggerFactory)
         var (subscriptions, options) = context.Resource;
         var credential = new DefaultAzureCredential();
         var client = new ArmClient(credential);
+        var purgers = new List<IAzureResourcesPurger>();
+
+        // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
+        if (options.ResourceGroups) purgers.Add(new ResourceGroupsPurger(loggerFactory));
+        if (options.Kubernetes) purgers.Add(new AksPurger(loggerFactory));
+        if (options.AppService) purgers.Add(new AppServicePurger(loggerFactory));
+        if (options.ContainerApps) purgers.Add(new ContainerAppsPurger(loggerFactory));
+        if (options.ContainerInstances) purgers.Add(new ContainerInstancesPurger(loggerFactory));
+        if (options.CosmosDB) purgers.Add(new CosmosDBPurger(loggerFactory));
+        if (options.MySql) purgers.Add(new MySqlPurger(loggerFactory));
+        if (options.PostgreSql) purgers.Add(new PostgreSqlPurger(loggerFactory));
+        if (options.Sql) purgers.Add(new SqlPurger(loggerFactory));
+        if (options.UserAssignedIdentities) purgers.Add(new UserAssignedIdentitiesPurger(loggerFactory));
 
         logger.LogDebug("Finding azure subscriptions ...");
         var subs = client.GetSubscriptions().GetAllAsync(cancellationToken);
@@ -26,21 +39,6 @@ public class AzureResourcesPurger(ILoggerFactory loggerFactory)
                 logger.LogDebug("Skipping subscription '{SubscriptionName}' ...", sub.Data.DisplayName); // no subscription ID for security reasons
                 continue;
             }
-
-            logger.LogDebug("Searching in subscription '{SubscriptionName}' ...", sub.Data.DisplayName); // no subscription ID for security reasons
-            var purgers = new List<IAzureResourcesPurger>();
-
-            // resource group is deleted first to avoid repetition on dependent resources, it makes it easier
-            if (options.ResourceGroups) purgers.Add(new ResourceGroupsPurger(loggerFactory));
-            if (options.Kubernetes) purgers.Add(new AksPurger(loggerFactory));
-            if (options.AppService) purgers.Add(new AppServicePurger(loggerFactory));
-            if (options.ContainerApps) purgers.Add(new ContainerAppsPurger(loggerFactory));
-            if (options.ContainerInstances) purgers.Add(new ContainerInstancesPurger(loggerFactory));
-            if (options.CosmosDB) purgers.Add(new CosmosDBPurger(loggerFactory));
-            if (options.MySql) purgers.Add(new MySqlPurger(loggerFactory));
-            if (options.PostgreSql) purgers.Add(new PostgreSqlPurger(loggerFactory));
-            if (options.Sql) purgers.Add(new SqlPurger(loggerFactory));
-            if (options.UserAssignedIdentities) purgers.Add(new UserAssignedIdentitiesPurger(loggerFactory));
 
             // create context and work through each purger
             var ctx = context.Convert(sub);
