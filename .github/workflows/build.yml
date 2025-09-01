@@ -238,7 +238,7 @@ jobs:
 
   #   steps:
   #   - name: Download Artifact
-  #     uses: actions/download-artifact@v4
+  #     uses: actions/download-artifact@v5
   #     with:
   #       name: deploy
   #       path: ${{ github.workspace }}/deploy
@@ -264,7 +264,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && ((github.ref == 'refs/heads/main') || startsWith(github.ref, 'refs/tags')) }}
 
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: drop
         path: ${{ github.workspace }}/drop
@@ -290,7 +290,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && startsWith(github.ref, 'refs/tags') }}
 
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v5
       with:
         name: drop
         path: ${{ github.workspace }}/drop
